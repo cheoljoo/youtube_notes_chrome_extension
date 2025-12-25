@@ -1,16 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>YouTube Notes</title>
     <style>
         body { font-family: Arial, sans-serif; min-width: 300px; margin: 10px; }
         .input-group { margin-bottom: 10px; }
         label { display: block; margin-bottom: 2px; }
         input, textarea { width: 100%; box-sizing: border-box; }
-        #notes-list { margin-top: 20px; }
-        .note-item { border-bottom: 1px solid #eee; padding: 5px 0; }
-        .tags { color: #0073e6; font-size: 0.95em; }
-        .opinion { margin: 3px 0; }
+        #notes-list { margin-top: 12px; max-height: 220px; overflow-y: auto; border-top: 1px solid #f0f0f0; padding-top:8px; }
+        .note-item { border-bottom: 1px solid #eee; padding: 8px 4px; display:block; }
+        .note-tags { margin-bottom:6px; }
+        .note-tag { display:inline-block; margin:2px 6px 2px 0; padding:3px 8px; border-radius:12px; background:#eef6ff; color:#0366d6; font-size:0.85em; cursor:pointer; border:1px solid #d6e9ff; }
+        .tag-pill { margin:3px 4px;padding:4px 8px;border-radius:12px;border:1px solid #ccc;background:#f6f6f6;cursor:pointer }
+        .opinion { margin: 3px 0; white-space:pre-wrap; }
+        #filter-info { margin-top:8px; font-size:0.9em; color:#444; }
     </style>
     <script src="popup.js"></script>
 </head>
@@ -18,12 +23,16 @@
     <div class="input-group">
         <label for="tags">Tags (comma separated)</label>
         <input type="text" id="tags" placeholder="e.g. 공부, 유튜브, 강의">
+        <div id="tag-list" style="margin-top:6px;font-size:0.95em"></div>
     </div>
     <div class="input-group">
         <label for="opinion">Opinion</label>
         <textarea id="opinion" rows="3" placeholder="나의 의견을 입력하세요"></textarea>
     </div>
     <button id="save-btn">저장</button>
+    <button id="refresh-btn" style="margin-left:8px;">목록 보기</button>
+    <button id="download-btn" style="margin-left:8px;">CSV 다운로드</button>
+    <div id="filter-info"></div>
     <div id="notes-list"></div>
 </body>
 </html>
