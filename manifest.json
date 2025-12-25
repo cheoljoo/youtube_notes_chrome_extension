@@ -1,8 +1,10 @@
 {
   "manifest_version": 3,
   "name": "YouTube → Gemini Notes",
-  "version": "0.1.0",
-  "description": "Summarize current YouTube content with Gemini and save to Google Sheets.",
+  "version": "1.0.0",
+  "description": "YouTube 동영상의 제목과 정보를 저장하고 태그로 관리하며 CSV로 다운로드하세요.",
+  "author": "Your Name",
+  "homepage_url": "https://github.com/yourusername/youtube-notes",
   "permissions": [
     "storage",
     "activeTab",
@@ -15,10 +17,16 @@
     "https://*.googleapis.com/*"
   ],
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_title": "YouTube Notes"
   },
   "options_page": "options.html",
   "background": {
     "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "images/icon-16.png",
+    "48": "images/icon-48.png",
+    "128": "images/icon-128.png"
   }
 }
