@@ -1,31 +1,29 @@
-<!doctype html>
-<html lang="ko">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>YouTube → Gemini Notes</title>
-  <style>
-    body{font-family:Arial,sans-serif;min-width:360px;padding:12px}
-    .tags{display:flex;flex-wrap:wrap;gap:6px}
-    .tag{background:#eee;padding:6px;border-radius:6px}
-    textarea{width:100%;height:100px}
-    button{margin-top:8px;padding:8px 12px}
-  </style>
+    <title>YouTube Notes</title>
+    <style>
+        body { font-family: Arial, sans-serif; min-width: 300px; margin: 10px; }
+        .input-group { margin-bottom: 10px; }
+        label { display: block; margin-bottom: 2px; }
+        input, textarea { width: 100%; box-sizing: border-box; }
+        #notes-list { margin-top: 20px; }
+        .note-item { border-bottom: 1px solid #eee; padding: 5px 0; }
+        .tags { color: #0073e6; font-size: 0.95em; }
+        .opinion { margin: 3px 0; }
+    </style>
+    <script src="popup.js"></script>
 </head>
 <body>
-  <h3>현재 영상 정보 불러오기</h3>
-  <div id="meta">로딩 중...</div>
-
-  <h4>태그 선택 (복수)</h4>
-  <div id="tags" class="tags">로딩...</div>
-  <input id="newTags" placeholder="새 태그 입력 (쉼표로 구분)" style="width:100%;margin-top:6px" />
-
-  <h4>나의 생각</h4>
-  <textarea id="note" placeholder="나의 의견을 적어주세요"></textarea>
-
-  <button id="save">요약+저장</button>
-  <div id="status"></div>
-
-  <script src="popup.js"></script>
+    <div class="input-group">
+        <label for="tags">Tags (comma separated)</label>
+        <input type="text" id="tags" placeholder="e.g. 공부, 유튜브, 강의">
+    </div>
+    <div class="input-group">
+        <label for="opinion">Opinion</label>
+        <textarea id="opinion" rows="3" placeholder="나의 의견을 입력하세요"></textarea>
+    </div>
+    <button id="save-btn">저장</button>
+    <div id="notes-list"></div>
 </body>
 </html>
