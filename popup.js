@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const tags = tagsInput.value.split(',').map(t => t.trim()).filter(t => t);
         const opinion = opinionInput.value.trim();
         if (tags.length === 0 && !opinion) {
-            alert('태그나 의견을 입력하세요.');
+            alert('Please enter tags or opinion.');
             return;
         }
         const note = {
@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function () {
         chrome.storage.local.get({notes: []}, function(result) {
             const notes = result.notes || [];
             if (notes.length === 0) {
-                alert('저장된 노트가 없습니다.');
+                alert('No notes to download.');
                 return;
             }
             // CSV 생성 (UTF-8 BOM 포함)
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 return s;
             }
-            const header = ['입력시간','유튜브 제목','유튜브 생성시간','태그','의견','URL'];
+            const header = ['Created Time','YouTube Title','Published Time','Tags','Opinion','URL'];
             const rows = notes.map(n => [
                 new Date(n.time).toISOString(),
                 n.youtubeTitle || '',
@@ -153,15 +153,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 filtered = notes.filter(n => (n.tags||[]).includes(currentFilter));
             }
             if (filtered.length === 0) {
-                notesList.innerHTML = '<div>저장된 노트가 없습니다.</div>';
+                notesList.innerHTML = '<div>No notes saved.</div>';
                 updateFilterInfo();
                 return;
             }
             notesList.innerHTML = filtered.map(note => {
                 const tagsHtml = (note.tags||[]).map(t => `<button class="note-tag" data-tag="${encodeURIComponent(t)}">${t}</button>`).join(' ');
                 const titleHtml = note.youtubeTitle ? `<div style="font-weight:600;margin-bottom:4px;">${note.youtubeTitle}</div>` : '';
-                const publishedDisplay = note.youtubePublished ? (isNaN(Date.parse(note.youtubePublished)) ? note.youtubePublished : new Date(note.youtubePublished).toLocaleString()) : '';
-                const metaLine = `${note.url ? `<a href="${note.url}" target="_blank">링크</a> | ` : ''}${publishedDisplay ? `게시: ${publishedDisplay} | ` : ''}${new Date(note.time).toLocaleString()}`;
+                const publishedDisplay = note.youtubePublished ? (isNaN(Date.parse(note.youtubePublished)) ? note.youtubePublished : new Date(note.youtubePublished).toLocaleString('en-US')) : '';
+                const metaLine = `${note.url ? `<a href="${note.url}" target="_blank">Link</a> | ` : ''}${publishedDisplay ? `Published: ${publishedDisplay} | ` : ''}Created: ${new Date(note.time).toLocaleString('en-US')}`;
                 return `
                 <div class="note-item">
                     ${titleHtml}
@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateFilterInfo(){
         if(!filterInfo) return;
         if(currentFilter){
-            filterInfo.innerHTML = `필터: <strong>#${currentFilter}</strong> <button id="clear-filter" style="margin-left:8px">필터 해제</button>`;
+            filterInfo.innerHTML = `Filter: <strong>#${currentFilter}</strong> <button id="clear-filter" style="margin-left:8px">Clear Filter</button>`;
             const btn = document.getElementById('clear-filter');
             if(btn) btn.addEventListener('click', function(){ currentFilter = null; renderNotes(); });
         } else {

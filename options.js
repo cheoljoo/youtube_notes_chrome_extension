@@ -4,7 +4,7 @@ document.getElementById('save').addEventListener('click', async ()=>{
   const sheetId = document.getElementById('sheetId').value.trim();
   const sheetRange = document.getElementById('sheetRange').value.trim() || 'Sheet1!A:D';
   await chrome.storage.sync.set({gemini_api_key:apiKey, gemini_model:model, spreadsheetId:sheetId, sheetRange, api_type:'palm'});
-  document.getElementById('status').textContent='저장됨';
+  document.getElementById('status').textContent='Saved';
 });
 
 async function load(){
