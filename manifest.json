@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube → Gemini Notes",
+  "version": "0.1.0",
+  "description": "Summarize current YouTube content with Gemini and save to Google Sheets.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "identity"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://video.google.com/*",
+    "https://*.googleapis.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.js"
+  }
+}

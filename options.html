@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Options</title></head>
+<body style="font-family:Arial;padding:12px;min-width:360px">
+  <h3>설정</h3>
+  <div>
+    <label>PaLM API Key (Gemini):</label><br>
+    <input id="apiKey" style="width:100%" />
+  </div>
+  <div style="margin-top:8px">
+    <label>Model (예: text-bison-001):</label><br>
+    <input id="model" style="width:100%" />
+  </div>
+  <div style="margin-top:8px">
+    <label>Spreadsheet ID:</label><br>
+    <input id="sheetId" style="width:100%" />
+  </div>
+  <div style="margin-top:8px">
+    <label>Sheet Range (예: Sheet1!A:D):</label><br>
+    <input id="sheetRange" style="width:100%" />
+  </div>
+  <div style="margin-top:8px">
+    <button id="save">저장</button>
+    <span id="status"></span>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
