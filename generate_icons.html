@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Generator</title>
+</head>
+<body>
+    <h1>아이콘 생성 도구</h1>
+    <p>이 페이지를 브라우저에서 열고 아래 버튼을 클릭하세요.</p>
+    <canvas id="canvas16" width="16" height="16"></canvas>
+    <canvas id="canvas48" width="48" height="48"></canvas>
+    <canvas id="canvas128" width="128" height="128"></canvas>
+    <br><br>
+    <button onclick="generateIcons()">아이콘 생성</button>
+
+    <script>
+        function generateIcons() {
+            const sizes = [16, 48, 128];
+            sizes.forEach(size => {
+                const canvas = document.getElementById(`canvas${size}`);
+                const ctx = canvas.getContext('2d');
+                
+                // 배경: YouTube 빨강
+                ctx.fillStyle = '#FF0000';
+                ctx.fillRect(0, 0, size, size);
+                
+                // 텍스트: "YN" (YouTube Notes)
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = `bold ${Math.floor(size * 0.6)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('YN', size / 2, size / 2);
+                
+                // 다운로드
+                canvas.toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `icon-${size}.png`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                });
+            });
+            alert('3개의 아이콘이 생성되었습니다. 다운로드 폴더에서 images 폴더로 옮겨주세요.');
+        }
+    </script>
+</body>
+</html>
