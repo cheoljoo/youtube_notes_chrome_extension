@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "YouTube → Gemini Notes",
-  "version": "1.0.0",
-  "description": "YouTube 동영상의 제목과 정보를 저장하고 태그로 관리하며 CSV로 다운로드하세요.",
-  "author": "Your Name",
-  "homepage_url": "https://github.com/yourusername/youtube-notes",
+  "name": "YouTube Notes",
+  "version": "1.0.1",
+  "description": "Save YouTube video titles and information, manage them with tags, and download as CSV.",
+  "author": "cheoljoo lee",
+  "homepage_url": "https://github.com/cheoljoo/youtube_notes_chrome_extension",
   "permissions": [
     "storage",
     "activeTab",

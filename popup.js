@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const downloadBtn = document.getElementById('download-btn');
     const notesList = document.getElementById('notes-list');
     const filterInfo = document.getElementById('filter-info');
+    const filterTags = document.getElementById('filter-tags');
     let currentFilter = null; // string or null
 
     // YouTube 메타정보를 탭에서 추출 (Promise 반환)
@@ -102,7 +103,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // 수동 새로고침 버튼
-    if (refreshBtn) refreshBtn.addEventListener('click', renderNotes);
+    if (refreshBtn) refreshBtn.addEventListener('click', function(){
+        renderNotes();
+        renderFilterTags();
+    });
 
     // CSV 다운로드
     if (downloadBtn) downloadBtn.addEventListener('click', function () {
@@ -179,6 +183,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const tag = decodeURIComponent(this.getAttribute('data-tag'));
                     currentFilter = tag;
                     renderNotes();
+                    renderFilterTags();
                 });
             });
             updateFilterInfo();
@@ -198,6 +203,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     renderNotes();
     renderTagList();
+    renderFilterTags();
 
     // 렌더링된 태그 목록을 불러와 표시하고 클릭시 태그 입력에 추가
     function renderTagList(){
@@ -233,5 +239,28 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             });
         }
+    }
+
+    // 태그로 바로 필터링할 수 있는 목록 표시
+    function renderFilterTags(){
+        if(!filterTags) return;
+        chrome.storage.local.get({notes:[]}, function(r){
+            const set = new Set();
+            (r.notes || []).forEach(n => (n.tags||[]).forEach(t=> set.add(t)));
+            const tags = Array.from(set);
+            if(tags.length === 0){
+                filterTags.innerHTML = '';
+                return;
+            }
+            filterTags.innerHTML = tags.map(t=> `<button class="tag-pill" data-tag="${encodeURIComponent(t)}">${t}</button>`).join(' ');
+            filterTags.querySelectorAll('.tag-pill').forEach(btn=>{
+                btn.addEventListener('click', function(){
+                    const tag = decodeURIComponent(this.getAttribute('data-tag'));
+                    currentFilter = tag;
+                    renderNotes();
+                    updateFilterInfo();
+                });
+            });
+        });
     }
 });
