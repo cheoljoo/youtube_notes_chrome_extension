@@ -54,10 +54,28 @@ youtube_notes_chrome_extension/
 └── README.md             # 이 파일
 ```
 
+
 ## 데이터 저장 방식
 
 - **로컬 스토리지** (`chrome.storage.local`): 모든 노트 저장
 - **동기 스토리지** (`chrome.storage.sync`): 태그 목록 저장
+- **클라우드 동기화(Firebase Firestore)**: "Sync with Cloud" 버튼 클릭 시, Google 계정별로 Firestore와 로컬 노트가 병합·동기화됨
+
+## Firebase 연동 및 동기화 사용법
+
+1. [Firebase 콘솔](https://console.firebase.google.com/)에서 새 프로젝트를 생성하세요.
+2. Firestore Database와 Authentication(Google) 기능을 활성화하세요.
+3. 프로젝트 설정 > 일반 > 내 앱에 Firebase 추가(웹)에서 아래 정보를 확인하세요:
+	- apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId
+4. `popup.js` 상단의 `firebaseConfig` 객체에 위 정보를 복사해 넣으세요.
+5. 확장 프로그램을 새로고침한 뒤, 팝업에서 "Sync with Cloud" 버튼을 클릭하면 Google 계정으로 로그인 후 Firestore와 로컬 노트가 병합·동기화됩니다.
+	- 같은 Google 계정이면 같은 저장소(문서)에 저장됩니다.
+
+> Firestore에는 `youtube_notes` 컬렉션 아래에 각 Google 계정의 uid별로 notes가 저장됩니다. 동기화 시 클라우드와 로컬의 notes가 중복 없이 합쳐집니다.
+
+### 참고
+- Firebase 무료 요금제(Blaze, Spark)로 충분히 사용 가능
+- 인증/보안 규칙은 필요에 따라 콘솔에서 조정하세요
 
 ## 개발 및 수정
 
@@ -70,3 +88,9 @@ MIT License
 ## 기여
 
 이슈 및 풀 요청은 언제든 환영합니다.
+
+# Todo & history
+- v1.0.1 : add tag filter
+## todo
+- google spreadsheet 지원하여 계정당 동기화
+- 그 외에 정보를 주고 받을 곳이 있는지? git에 upload하는 방법은?

@@ -1,4 +1,129 @@
+// Firebase SDK import (CDN)
+const firebaseScript = document.createElement('script');
+firebaseScript.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
+firebaseScript.onload = () => {
+    const authScript = document.createElement('script');
+    authScript.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js';
+    document.head.appendChild(authScript);
+    const dbScript = document.createElement('script');
+    dbScript.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js';
+    document.head.appendChild(dbScript);
+};
+document.head.appendChild(firebaseScript);
+
 document.addEventListener('DOMContentLoaded', function () {
+        // Firebase 설정 (사용자가 직접 입력해야 함)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        let firebaseApp = null, firebaseAuth = null, firebaseDb = null, currentUser = null;
+
+        function initFirebaseIfNeeded() {
+            if (window.firebase && !firebaseApp) {
+                firebaseApp = firebase.initializeApp(firebaseConfig);
+                firebaseAuth = firebase.auth();
+                firebaseDb = firebase.firestore();
+            }
+        }
+
+        // Google 로그인
+        async function signInWithGoogle() {
+            initFirebaseIfNeeded();
+            if (!firebaseAuth) return null;
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                const result = await firebaseAuth.signInWithPopup(provider);
+                currentUser = result.user;
+                return currentUser;
+            } catch (e) {
+                alert('Google 로그인 실패: ' + e.message);
+                return null;
+            }
+        }
+
+        // notes 업로드 (Firestore)
+        async function uploadNotesToCloud() {
+            initFirebaseIfNeeded();
+            if (!firebaseAuth || !firebaseDb) {
+                alert('Firebase SDK 로딩 중입니다. 잠시 후 다시 시도하세요.');
+                return;
+            }
+            let user = firebaseAuth.currentUser;
+            if (!user) {
+                user = await signInWithGoogle();
+                if (!user) return;
+            }
+            chrome.storage.local.get({notes: []}, async function(result) {
+                const notes = result.notes || [];
+                if (notes.length === 0) {
+                    alert('업로드할 노트가 없습니다.');
+                    return;
+                }
+                try {
+                    // user.uid별로 notes 문서에 저장
+                    await firebaseDb.collection('youtube_notes').doc(user.uid).set({notes});
+                    alert('클라우드 업로드 완료!');
+                } catch (e) {
+                    alert('업로드 실패: ' + e.message);
+                }
+            });
+        }
+
+        // 동기화 버튼 핸들러
+        const syncBtn = document.getElementById('sync-btn');
+        if (syncBtn) {
+            syncBtn.addEventListener('click', syncNotesWithCloud);
+        }
+
+        // notes 동기화 (병합)
+        async function syncNotesWithCloud() {
+            initFirebaseIfNeeded();
+            if (!firebaseAuth || !firebaseDb) {
+                alert('Firebase SDK 로딩 중입니다. 잠시 후 다시 시도하세요.');
+                return;
+            }
+            let user = firebaseAuth.currentUser;
+            if (!user) {
+                user = await signInWithGoogle();
+                if (!user) return;
+            }
+            // 1. 클라우드 notes 불러오기
+            let cloudNotes = [];
+            try {
+                const doc = await firebaseDb.collection('youtube_notes').doc(user.uid).get();
+                if (doc.exists && doc.data().notes) {
+                    cloudNotes = doc.data().notes;
+                }
+            } catch (e) {
+                alert('클라우드에서 노트 불러오기 실패: ' + e.message);
+                return;
+            }
+            // 2. 로컬 notes 불러오기
+            chrome.storage.local.get({notes: []}, async function(result) {
+                const localNotes = result.notes || [];
+                // 3. 두 notes 병합 (중복 제거: time+opinion+url 기준)
+                function noteKey(n) { return [n.time, n.opinion, n.url].join('|'); }
+                const map = new Map();
+                [...cloudNotes, ...localNotes].forEach(n => map.set(noteKey(n), n));
+                const mergedNotes = Array.from(map.values()).sort((a,b)=>b.time-a.time);
+                // 4. 클라우드와 로컬 모두에 저장
+                try {
+                    await firebaseDb.collection('youtube_notes').doc(user.uid).set({notes: mergedNotes});
+                } catch (e) {
+                    alert('클라우드 저장 실패: ' + e.message);
+                    return;
+                }
+                chrome.storage.local.set({notes: mergedNotes}, function() {
+                    alert('클라우드와 동기화 완료!');
+                    renderNotes();
+                });
+            });
+        }
     const tagsInput = document.getElementById('tags');
     const opinionInput = document.getElementById('opinion');
     const saveBtn = document.getElementById('save-btn');
