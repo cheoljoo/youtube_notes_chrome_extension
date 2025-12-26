@@ -61,21 +61,115 @@ youtube_notes_chrome_extension/
 - **동기 스토리지** (`chrome.storage.sync`): 태그 목록 저장
 - **클라우드 동기화(Firebase Firestore)**: "Sync with Cloud" 버튼 클릭 시, Google 계정별로 Firestore와 로컬 노트가 병합·동기화됨
 
-## Firebase 연동 및 동기화 사용법
+## 🌥️ 클라우드 동기화
 
-1. [Firebase 콘솔](https://console.firebase.google.com/)에서 새 프로젝트를 생성하세요.
-2. Firestore Database와 Authentication(Google) 기능을 활성화하세요.
-3. 프로젝트 설정 > 일반 > 내 앱에 Firebase 추가(웹)에서 아래 정보를 확인하세요:
-	- apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId
-4. `popup.js` 상단의 `firebaseConfig` 객체에 위 정보를 복사해 넣으세요.
-5. 확장 프로그램을 새로고침한 뒤, 팝업에서 "Sync with Cloud" 버튼을 클릭하면 Google 계정으로 로그인 후 Firestore와 로컬 노트가 병합·동기화됩니다.
-	- 같은 Google 계정이면 같은 저장소(문서)에 저장됩니다.
+> **🎯 공용 Firebase 방식**: 개발자가 한 번만 설정하면, 모든 사용자가 Google 로그인만으로 사용 가능!
 
-> Firestore에는 `youtube_notes` 컬렉션 아래에 각 Google 계정의 uid별로 notes가 저장됩니다. 동기화 시 클라우드와 로컬의 notes가 중복 없이 합쳐집니다.
+### 👥 사용자 (일반인)
 
-### 참고
-- Firebase 무료 요금제(Blaze, Spark)로 충분히 사용 가능
-- 인증/보안 규칙은 필요에 따라 콘솔에서 조정하세요
+**설정 불필요! Google 로그인만 하면 됩니다:**
+
+1. 확장 프로그램 팝업 열기
+2. **"Sync with Cloud"** 버튼 클릭
+3. **Google 계정으로 로그인**
+4. 완료! 🎉
+
+여러 컴퓨터에서 같은 Google 계정으로 로그인하면 자동으로 노트가 동기화됩니다.
+
+### 🔧 개발자 (프로젝트 유지보수자)
+
+**한 번만 설정하면 모든 사용자가 사용 가능합니다:**
+
+#### 1단계: Firebase 프로젝트 생성 (10분, 한 번만)
+
+1. [Firebase Console](https://console.firebase.google.com/) 접속
+2. "프로젝트 추가" 클릭
+3. 프로젝트 이름: `youtube-notes-shared` (또는 원하는 이름)
+4. Google Analytics: "지금은 사용 안 함" 선택
+
+#### 2단계: Firestore 설정
+
+1. Firestore Database → "데이터베이스 만들기"
+2. "프로덕션 모드" 선택
+3. 위치: `asia-northeast3 (Seoul)` 선택
+4. "규칙" 탭에서 다음과 같이 설정:
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /youtube_notes/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+```
+
+#### 3단계: Authentication 설정
+
+1. Authentication → "시작하기"
+2. "Sign-in method" → "Google" 활성화
+3. 프로젝트 공개용 이름 및 지원 이메일 입력
+
+#### 4단계: 설정값 가져오기
+
+1. 프로젝트 설정 (⚙️) → 일반 탭
+2. 웹 앱 추가 (`</>` 아이콘)
+3. Firebase SDK 구성 정보 복사
+
+#### 5단계: popup.js 업데이트
+
+`popup.js` 파일의 `FIREBASE_CONFIG`를 실제 값으로 교체:
+
+```javascript
+const FIREBASE_CONFIG = {
+    apiKey: "실제-API-Key",
+    authDomain: "프로젝트.firebaseapp.com",
+    projectId: "프로젝트-id",
+    storageBucket: "프로젝트.appspot.com",
+    messagingSenderId: "숫자",
+    appId: "1:숫자:web:문자열"
+};
+```
+
+#### 6단계: Git 커밋 & 배포
+
+```bash
+git add popup.js
+git commit -m "Add Firebase configuration"
+git push
+```
+
+**끝!** 이제 모든 사용자가 Firebase 설정 없이 Google 로그인만으로 클라우드 동기화를 사용할 수 있습니다.
+
+### 🔐 보안 구조
+
+```
+Firebase 프로젝트 (1개, 모든 사용자 공유)
+├── User A (user-a@gmail.com)
+│   └── notes: [A의 노트들...]
+├── User B (user-b@gmail.com)
+│   └── notes: [B의 노트들...]
+└── User C (user-c@gmail.com)
+    └── notes: [C의 노트들...]
+```
+
+- **하나의 Firebase 프로젝트를 모든 사용자가 공유**
+- **각 사용자의 데이터는 Google UID로 완전히 분리**
+- **Firestore 보안 규칙으로 자신의 데이터만 접근 가능**
+
+### 💰 비용
+
+**완전 무료!** (Firebase Spark Plan)
+- 일일 50,000회 읽기, 20,000회 쓰기
+- 무제한 Google 로그인
+- 수천 명이 사용해도 무료 한도 내에서 충분
+
+### 📚 상세 가이드
+
+더 자세한 내용은 다음 파일 참고:
+- **FIREBASE_DEVELOPER_GUIDE.md** - 개발자용 상세 가이드
+- **FIREBASE_SETUP.md** - 단계별 설정 가이드
 
 ## 개발 및 수정
 

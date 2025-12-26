@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>YouTube Notes</title>
     <style>
-        body { font-family: Arial, sans-serif; min-width: 300px; margin: 10px; }
+        body { font-family: Arial, sans-serif; min-width: 350px; margin: 10px; }
         .input-group { margin-bottom: 10px; }
         label { display: block; margin-bottom: 2px; }
         input, textarea { width: 100%; box-sizing: border-box; }
@@ -16,10 +16,29 @@
         .tag-pill { margin:3px 4px;padding:4px 8px;border-radius:12px;border:1px solid #ccc;background:#f6f6f6;cursor:pointer }
         .opinion { margin: 3px 0; white-space:pre-wrap; }
         #filter-info { margin-top:8px; font-size:0.9em; color:#444; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #eee; }
+        .header h3 { margin: 0; font-size: 16px; }
+        #settings-btn { padding: 4px 10px; font-size: 12px; background: #f0f0f0; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; }
+        #settings-btn:hover { background: #e0e0e0; }
+        #firebase-status { padding: 6px 10px; margin-bottom: 10px; border-radius: 4px; font-size: 12px; display: none; }
+        #firebase-status.warning { background: #fff3cd; border: 1px solid #ffc107; color: #856404; }
+        #firebase-status.success { background: #d4edda; border: 1px solid #28a745; color: #155724; }
+        #firebase-status a { color: #0066cc; text-decoration: underline; cursor: pointer; }
+        .firebase-setup { background: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 10px; display: none; }
+        .firebase-setup input { margin-bottom: 6px; padding: 4px; font-size: 12px; }
+        .firebase-setup button { margin-top: 6px; padding: 4px 8px; font-size: 12px; }
+        .small-text { font-size: 11px; color: #666; margin-top: 4px; }
     </style>
+    
+    <!-- Firebase SDK (bundled locally for MV3 CSP) -->
+    <script src="vendor/firebase.bundle.js"></script>
     <script src="popup.js"></script>
 </head>
 <body>
+    <div class="header">
+        <h3>📝 YouTube Notes</h3>
+    </div>
+    
     <div class="input-group">
         <label for="tags">Tags (comma separated)</label>
         <input type="text" id="tags" placeholder="e.g. study, youtube, tutorial">

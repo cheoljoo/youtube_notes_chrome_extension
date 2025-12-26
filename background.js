@@ -1,4 +1,49 @@
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse)=>{
+// Firebase 인증 상태를 chrome.storage에서 관리
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.action === 'firebase_signin') {
+        // popup에서 직접 처리하도록 요청
+        sendResponse({ action: 'signin_in_popup' });
+        return true;
+    }
+    
+    if (msg.action === 'firebase_signin_success') {
+        // auth.html에서 로그인 성공 메시지 수신
+        console.log('✅ Sign-in successful, saving user:', msg.user.email);
+        chrome.storage.local.set({ firebase_user: msg.user }, () => {
+            sendResponse({ success: true });
+        });
+        return true;
+    }
+    
+    if (msg.action === 'firebase_get_user') {
+        // chrome.storage에서 저장된 사용자 정보 조회
+        chrome.storage.local.get(['firebase_user'], (result) => {
+            sendResponse(result.firebase_user || { signedIn: false });
+        });
+        return true;
+    }
+    
+    if (msg.action === 'firebase_save_user') {
+        // 로그인 성공 후 사용자 정보 저장
+        chrome.storage.local.set({ firebase_user: msg.data }, () => {
+            sendResponse({ success: true });
+        });
+        return true;
+    }
+    
+    if (msg.action === 'firebase_logout') {
+        // 로그아웃
+        chrome.storage.local.remove(['firebase_user'], () => {
+            sendResponse({ success: true });
+        });
+        return true;
+    }
+    
+    if(msg.action==='summarize_and_save'){
+        handleSummarizeAndSave(msg).then(r=>sendResponse(r)).catch(e=>sendResponse({error:e.message}));
+        return true;
+    }
+});
   if(msg.action==='summarize_and_save'){
     handleSummarizeAndSave(msg).then(r=>sendResponse(r)).catch(e=>sendResponse({error:e.message}));
     return true;

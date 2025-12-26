@@ -1,129 +1,378 @@
-// Firebase SDK import (CDN)
-const firebaseScript = document.createElement('script');
-firebaseScript.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
-firebaseScript.onload = () => {
-    const authScript = document.createElement('script');
-    authScript.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js';
-    document.head.appendChild(authScript);
-    const dbScript = document.createElement('script');
-    dbScript.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js';
-    document.head.appendChild(dbScript);
+// Firebase configuration - 선택사항 (설정하지 않으면 로컬 전용으로 작동)
+// 개발자가 실제 Firebase 프로젝트를 설정하려면 아래 값들을 실제 값으로 교체하세요
+// 설정하지 않으면 Firebase 동기화 기능이 비활성화되고, 로컬 저장만 사용됩니다
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyB8otEZ1uJmxLJ6OQZ40lirnJJCSIUhcK0",
+  authDomain: "notes-shared-2f265.firebaseapp.com",
+  projectId: "notes-shared-2f265",
+  storageBucket: "notes-shared-2f265.appspot.com",
+  messagingSenderId: "995120058750",
+  appId: "1:995120058750:web:b9ee2101567fd07ad3632f"
 };
-document.head.appendChild(firebaseScript);
 
-document.addEventListener('DOMContentLoaded', function () {
-        // Firebase 설정 (사용자가 직접 입력해야 함)
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-        let firebaseApp = null, firebaseAuth = null, firebaseDb = null, currentUser = null;
+let firebaseApp = null;
+let firebaseAuth = null;
+let firebaseDb = null;
+let currentUser = null;
+let firebaseInitialized = false;
+let firebaseEnabled = false;  // Firebase 사용 가능 여부
 
-        function initFirebaseIfNeeded() {
-            if (window.firebase && !firebaseApp) {
-                firebaseApp = firebase.initializeApp(firebaseConfig);
-                firebaseAuth = firebase.auth();
-                firebaseDb = firebase.firestore();
-            }
+// Firebase가 설정되어 있는지 확인
+function isFirebaseConfigured() {
+    return FIREBASE_CONFIG.apiKey && 
+           FIREBASE_CONFIG.projectId && 
+           FIREBASE_CONFIG.apiKey.length > 10;  // 더미 값 제외
+}
+
+// Firebase 설정 상태 확인 및 UI 업데이트
+async function checkFirebaseConfig() {
+    const statusDiv = document.getElementById('firebase-status');
+    const syncBtn = document.getElementById('sync-btn');
+    
+    firebaseEnabled = isFirebaseConfigured();
+    
+    if (!firebaseEnabled) {
+        // Firebase 설정이 없음 - 로컬 전용 모드
+        if (statusDiv) {
+            statusDiv.style.display = 'none';
         }
-
-        // Google 로그인
-        async function signInWithGoogle() {
-            initFirebaseIfNeeded();
-            if (!firebaseAuth) return null;
-            try {
-                const provider = new firebase.auth.GoogleAuthProvider();
-                const result = await firebaseAuth.signInWithPopup(provider);
-                currentUser = result.user;
-                return currentUser;
-            } catch (e) {
-                alert('Google 로그인 실패: ' + e.message);
-                return null;
-            }
-        }
-
-        // notes 업로드 (Firestore)
-        async function uploadNotesToCloud() {
-            initFirebaseIfNeeded();
-            if (!firebaseAuth || !firebaseDb) {
-                alert('Firebase SDK 로딩 중입니다. 잠시 후 다시 시도하세요.');
-                return;
-            }
-            let user = firebaseAuth.currentUser;
-            if (!user) {
-                user = await signInWithGoogle();
-                if (!user) return;
-            }
-            chrome.storage.local.get({notes: []}, async function(result) {
-                const notes = result.notes || [];
-                if (notes.length === 0) {
-                    alert('업로드할 노트가 없습니다.');
-                    return;
-                }
-                try {
-                    // user.uid별로 notes 문서에 저장
-                    await firebaseDb.collection('youtube_notes').doc(user.uid).set({notes});
-                    alert('클라우드 업로드 완료!');
-                } catch (e) {
-                    alert('업로드 실패: ' + e.message);
-                }
-            });
-        }
-
-        // 동기화 버튼 핸들러
-        const syncBtn = document.getElementById('sync-btn');
         if (syncBtn) {
-            syncBtn.addEventListener('click', syncNotesWithCloud);
+            syncBtn.style.display = 'inline-block';
+            syncBtn.style.opacity = '0.6';
+            syncBtn.title = '클라우드 동기화 (Firebase 설정 필요)';
+            syncBtn.style.background = '#999';
         }
+        console.log('Firebase not configured - running in local-only mode');
+    } else {
+        // Firebase 설정됨
+        if (statusDiv) {
+            statusDiv.style.display = 'none';
+        }
+        if (syncBtn) {
+            syncBtn.style.display = 'inline-block';
+            syncBtn.style.opacity = '1';
+            syncBtn.style.background = '#03c';
+            syncBtn.title = '클라우드와 동기화 (Google 로그인 필요)';
+        }
+        console.log('Firebase configured - cloud sync available');
+    }
+    return true;
+}
 
-        // notes 동기화 (병합)
-        async function syncNotesWithCloud() {
-            initFirebaseIfNeeded();
-            if (!firebaseAuth || !firebaseDb) {
-                alert('Firebase SDK 로딩 중입니다. 잠시 후 다시 시도하세요.');
+// Firebase SDK 초기화 (고정된 설정 사용)
+async function initFirebase() {
+    if (!firebaseEnabled) {
+        console.log('Firebase is not configured');
+        return false;
+    }
+    
+    if (firebaseInitialized) return true;
+    
+    return new Promise((resolve) => {
+        try {
+            // firebase가 로드되었는지 확인 (window.firebase 또는 전역 firebase)
+            const fb = window.firebase || (typeof firebase !== 'undefined' ? firebase : null);
+            
+            if (!fb) {
+                console.error('Firebase SDK not loaded - bundle may have failed');
+                console.error('window.firebase:', window.firebase);
+                console.error('global firebase:', typeof firebase !== 'undefined' ? firebase : 'undefined');
+                firebaseEnabled = false;
+                resolve(false);
                 return;
             }
-            let user = firebaseAuth.currentUser;
-            if (!user) {
-                user = await signInWithGoogle();
-                if (!user) return;
-            }
-            // 1. 클라우드 notes 불러오기
-            let cloudNotes = [];
-            try {
-                const doc = await firebaseDb.collection('youtube_notes').doc(user.uid).get();
-                if (doc.exists && doc.data().notes) {
-                    cloudNotes = doc.data().notes;
-                }
-            } catch (e) {
-                alert('클라우드에서 노트 불러오기 실패: ' + e.message);
-                return;
-            }
-            // 2. 로컬 notes 불러오기
-            chrome.storage.local.get({notes: []}, async function(result) {
-                const localNotes = result.notes || [];
-                // 3. 두 notes 병합 (중복 제거: time+opinion+url 기준)
-                function noteKey(n) { return [n.time, n.opinion, n.url].join('|'); }
-                const map = new Map();
-                [...cloudNotes, ...localNotes].forEach(n => map.set(noteKey(n), n));
-                const mergedNotes = Array.from(map.values()).sort((a,b)=>b.time-a.time);
-                // 4. 클라우드와 로컬 모두에 저장
-                try {
-                    await firebaseDb.collection('youtube_notes').doc(user.uid).set({notes: mergedNotes});
-                } catch (e) {
-                    alert('클라우드 저장 실패: ' + e.message);
-                    return;
-                }
-                chrome.storage.local.set({notes: mergedNotes}, function() {
-                    alert('클라우드와 동기화 완료!');
-                    renderNotes();
+
+            if (!firebaseApp) {
+                console.log('Initializing Firebase with config:', {
+                    projectId: FIREBASE_CONFIG.projectId,
+                    authDomain: FIREBASE_CONFIG.authDomain
                 });
+                
+                firebaseApp = fb.initializeApp(FIREBASE_CONFIG);
+                firebaseAuth = fb.auth();
+                firebaseDb = fb.firestore();
+                firebaseInitialized = true;
+                
+                console.log('Firebase initialized successfully');
+                console.log('Auth domain:', firebaseAuth.app.options.authDomain);
+                console.log('Project ID:', firebaseAuth.app.options.projectId);
+            }
+            resolve(true);
+        } catch (e) {
+            console.error('Firebase initialization error:', e);
+            console.error('Error details:', {
+                name: e.name,
+                message: e.message,
+                code: e.code,
+                stack: e.stack
             });
+            firebaseEnabled = false;
+            resolve(false);
         }
+    });
+}
+
+// Google 로그인 (Popup에서 직접 처리)
+async function signInWithGoogle() {
+    if (!firebaseEnabled) {
+        alert('클라우드 동기화는 현재 사용할 수 없습니다.\n\n로컬 저장 기능만 사용 가능합니다.');
+        return null;
+    }
+    
+    const initialized = await initFirebase();
+    if (!initialized || !firebaseAuth) {
+        alert('클라우드 동기화를 사용할 수 없습니다.\n\n로컬 저장 기능만 사용 가능합니다.');
+        return null;
+    }
+    
+    try {
+        console.log('🔐 Checking for existing auth state...');
+        
+        // 이미 로그인되어 있는지 확인
+        if (firebaseAuth.currentUser) {
+            currentUser = firebaseAuth.currentUser;
+            console.log('✅ Already signed in:', currentUser.email);
+            return currentUser;
+        }
+        
+        console.log('🔄 Starting Firebase signInWithPopup...');
+        
+        const fb = window.firebase || firebase;
+        const provider = new fb.auth.GoogleAuthProvider();
+        const result = await firebaseAuth.signInWithPopup(provider);
+        
+        currentUser = result.user;
+        console.log('✅ Sign-in successful:', currentUser.email);
+        
+        // 로그인 정보를 chrome.storage에 저장 (다른 popup에서도 접근 가능)
+        await chrome.runtime.sendMessage({
+            action: 'firebase_save_user',
+            data: {
+                signedIn: true,
+                user: currentUser.email,
+                uid: currentUser.uid
+            }
+        });
+        
+        alert('Google 로그인 성공!\n\n이메일: ' + currentUser.email);
+        return currentUser;
+        
+    } catch (e) {
+        console.error('❌ Google login failed');
+        console.error('Error code:', e.code);
+        console.error('Error message:', e.message);
+        
+        let errorMsg = e.message;
+        
+        if (e.code === 'auth/unauthorized-domain') {
+            errorMsg = 'Firebase 승인 도메인 설정이 필요합니다.\n\n' +
+                'Firebase Console에서 다음을 확인하세요:\n' +
+                '1. Authentication > Settings > Authorized domains\n' +
+                '2. chrome-extension://ehnlpkdchejanlmepbgpcmlfgeklapk 추가 여부';
+        } else if (e.code === 'auth/operation-not-allowed') {
+            errorMsg = 'Firebase에서 Google 로그인을 활성화해야 합니다.\n\n' +
+                'Firebase Console > Authentication > Sign-in method에서\n' +
+                'Google을 활성화하세요.';
+        } else if (e.code === 'auth/popup-blocked') {
+            errorMsg = '팝업이 차단되었습니다.\n\n' +
+                '브라우저 설정에서 팝업을 허용해주세요.';
+        }
+        
+        alert('Google 로그인 실패: ' + errorMsg);
+        return null;
+    }
+}
+
+// 페이지 로드 시 로그인 상태 확인
+async function checkAuthState() {
+    if (!firebaseEnabled || !firebaseAuth) return;
+    
+    try {
+        console.log('🔍 Checking auth state...');
+        
+        // 1. Firebase 자체의 인증 상태 확인
+        if (firebaseAuth.currentUser) {
+            currentUser = firebaseAuth.currentUser;
+            console.log('✅ User already signed in (Firebase):', currentUser.email);
+            return;
+        }
+        
+        // 2. chrome.storage에서 저장된 사용자 정보 확인
+        const response = await chrome.runtime.sendMessage({ action: 'firebase_get_user' });
+        
+        if (response && response.signedIn && response.user) {
+            console.log('✅ User signed in (from storage):', response.user);
+            currentUser = response;
+        } else {
+            console.log('ℹ️ No user signed in');
+        }
+    } catch (e) {
+        console.error('❌ Auth state check error:', e);
+    }
+}
+
+// notes 업로드 (Firestore)
+async function uploadNotesToCloud() {
+    if (!firebaseEnabled) {
+        alert('클라우드 동기화는 현재 사용할 수 없습니다.\n\n로컬 저장 기능만 사용 가능합니다.');
+        return;
+    }
+    
+    const initialized = await initFirebase();
+    if (!initialized || !firebaseAuth || !firebaseDb) {
+        alert('클라우드 동기화를 사용할 수 없습니다.\n\n로컬 저장 기능만 사용 가능합니다.');
+        return;
+    }
+    
+    let user = firebaseAuth.currentUser;
+    if (!user) {
+        user = await signInWithGoogle();
+        if (!user) return;
+    }
+    
+    chrome.storage.local.get({notes: []}, async function(result) {
+        const notes = result.notes || [];
+        if (notes.length === 0) {
+            alert('업로드할 노트가 없습니다.');
+            return;
+        }
+        try {
+            await firebaseDb.collection('youtube_notes').doc(user.uid).set({notes});
+            alert('클라우드 업로드 완료!');
+        } catch (e) {
+            console.error('Upload error:', e);
+            alert('업로드 실패: ' + e.message);
+        }
+    });
+}
+
+// notes 동기화 (병합)
+async function syncNotesWithCloud() {
+    if (!firebaseEnabled) {
+        const setupGuide = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌥️ Firebase 클라우드 동기화 설정
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+현재 Firebase가 설정되지 않아 클라우드 동기화를
+사용할 수 없습니다.
+
+📝 현재 사용 가능한 기능:
+✅ 로컬 저장 (브라우저에 저장)
+✅ 태그 관리
+✅ 필터링
+✅ CSV 내보내기
+
+🔧 Firebase 설정 방법 (개발자용):
+
+1. Firebase Console 접속
+   https://console.firebase.google.com
+
+2. 프로젝트 생성 및 Firestore 설정
+
+3. popup.js 파일의 FIREBASE_CONFIG를
+   실제 Firebase 설정값으로 교체
+
+자세한 내용:
+FIREBASE_DEVELOPER_GUIDE.md 파일 참고
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💡 참고: Firebase 설정 없이도 로컬에서
+   모든 기능을 사용할 수 있습니다!
+        `;
+        alert(setupGuide);
+        return;
+    }
+    
+    // Chrome Extension tab에서 auth.html을 새 탭으로 열기
+    const authUrl = chrome.runtime.getURL('auth.html?action=signin');
+    chrome.tabs.create({ url: authUrl }, (tab) => {
+        console.log('🔓 Opened auth page in new tab:', authUrl);
+        
+        // Auth 탭이 닫힐 때까지 폴링하며 사용자 정보 확인
+        const checkUserInterval = setInterval(() => {
+            chrome.tabs.get(tab.id, (currentTab) => {
+                if (chrome.runtime.lastError) {
+                    // 탭이 닫혔음
+                    clearInterval(checkUserInterval);
+                    
+                    // 로그인 완료 확인
+                    chrome.storage.local.get(['firebase_user'], async (result) => {
+                        const user = result.firebase_user;
+                        if (user && user.uid) {
+                            console.log('✅ User logged in:', user.email);
+                            await performSync(user);
+                        } else {
+                            console.log('❌ User login failed or cancelled');
+                            alert('로그인이 취소되었습니다.');
+                        }
+                    });
+                }
+            });
+        }, 500);
+    });
+}
+
+async function performSync(user) {
+    // 초기화 확인
+    const initialized = await initFirebase();
+    if (!initialized || !firebaseDb) {
+        alert('클라우드 동기화를 사용할 수 없습니다.');
+        return;
+    }
+    
+    // 1. 클라우드 notes 불러오기
+    let cloudNotes = [];
+    try {
+        const doc = await firebaseDb.collection('youtube_notes').doc(user.uid).get();
+        if (doc.exists && doc.data().notes) {
+            cloudNotes = doc.data().notes;
+        }
+    } catch (e) {
+        console.error('Cloud fetch error:', e);
+        alert('클라우드에서 노트 불러오기 실패: ' + e.message);
+        return;
+    }
+    
+    // 2. 로컬 notes 불러오기
+    chrome.storage.local.get({notes: []}, async function(result) {
+        const localNotes = result.notes || [];
+        // 3. 두 notes 병합 (중복 제거: time+opinion+url 기준)
+        function noteKey(n) { return [n.time, n.opinion, n.url].join('|'); }
+        const map = new Map();
+        [...cloudNotes, ...localNotes].forEach(n => map.set(noteKey(n), n));
+        const mergedNotes = Array.from(map.values()).sort((a,b)=>b.time-a.time);
+        
+        // 4. 클라우드와 로컬 모두에 저장
+        try {
+            await firebaseDb.collection('youtube_notes').doc(user.uid).set({notes: mergedNotes});
+        } catch (e) {
+            console.error('Cloud save error:', e);
+            alert('클라우드 저장 실패: ' + e.message);
+            return;
+        }
+        
+        chrome.storage.local.set({notes: mergedNotes}, function() {
+            alert('클라우드와 동기화 완료!');
+            renderNotes();
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', async function () {
+    // Firebase 설정 상태 확인
+    await checkFirebaseConfig();
+    
+    // Firebase 로그인 상태 확인
+    if (firebaseEnabled) {
+        await checkAuthState();
+    }
+    
+    // 동기화 버튼 핸들러
+    const syncBtn = document.getElementById('sync-btn');
+    if (syncBtn) {
+        syncBtn.addEventListener('click', syncNotesWithCloud);
+    }
     const tagsInput = document.getElementById('tags');
     const opinionInput = document.getElementById('opinion');
     const saveBtn = document.getElementById('save-btn');

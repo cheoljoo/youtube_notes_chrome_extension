@@ -14,8 +14,13 @@
   "host_permissions": [
     "https://www.youtube.com/*",
     "https://video.google.com/*",
-    "https://*.googleapis.com/*"
+    "https://*.googleapis.com/*",
+    "https://*.firebaseio.com/*",
+    "https://*.firebaseapp.com/*"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' https://accounts.google.com https://apis.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com; frame-src 'self' https://accounts.google.com https://*.firebaseapp.com https://*.googleusercontent.com"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "YouTube Notes"
@@ -28,5 +33,11 @@
     "16": "images/icon-16.png",
     "48": "images/icon-48.png",
     "128": "images/icon-128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["auth.html", "vendor/firebase.bundle.js", "auth.js"],
+      "matches": ["chrome-extension://*/*"]
+    }
+  ]
 }

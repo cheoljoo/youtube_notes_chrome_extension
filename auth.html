@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Notes - Google 로그인</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 100px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .loading {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #357ae8;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: #1976d2;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>📝 YouTube Notes</h1>
+    <h2>Google 로그인</h2>
+    
+    <div id="status" class="status loading">
+        <div class="spinner"></div>
+        <p>Firebase 초기화 중...</p>
+    </div>
+    
+    <div id="actions" style="display: none;">
+        <button id="signin-btn">Google로 로그인</button>
+        <button id="close-btn">닫기</button>
+    </div>
+    
+    <script src="vendor/firebase.bundle.js"></script>
+    <script src="auth.js"></script>
+</body>
+</html>

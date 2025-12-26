@@ -3,6 +3,36 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Options</title></head>
 <body style="font-family:Arial;padding:12px;min-width:360px">
   <h3>Settings</h3>
+  
+  <h4>Firebase Configuration (for Cloud Sync)</h4>
+  <div>
+    <label>Firebase API Key:</label><br>
+    <input id="firebaseApiKey" style="width:100%" />
+  </div>
+  <div style="margin-top:8px">
+    <label>Firebase Auth Domain:</label><br>
+    <input id="firebaseAuthDomain" style="width:100%" placeholder="your-project.firebaseapp.com" />
+  </div>
+  <div style="margin-top:8px">
+    <label>Firebase Project ID:</label><br>
+    <input id="firebaseProjectId" style="width:100%" />
+  </div>
+  <div style="margin-top:8px">
+    <label>Firebase Storage Bucket:</label><br>
+    <input id="firebaseStorageBucket" style="width:100%" placeholder="your-project.appspot.com" />
+  </div>
+  <div style="margin-top:8px">
+    <label>Firebase Messaging Sender ID:</label><br>
+    <input id="firebaseMessagingSenderId" style="width:100%" />
+  </div>
+  <div style="margin-top:8px">
+    <label>Firebase App ID:</label><br>
+    <input id="firebaseAppId" style="width:100%" />
+  </div>
+
+  <hr style="margin:20px 0">
+  
+  <h4>Gemini API Settings (Optional)</h4>
   <div>
     <label>PaLM API Key (Gemini):</label><br>
     <input id="apiKey" style="width:100%" />
@@ -19,6 +49,7 @@
     <label>Sheet Range (e.g. Sheet1!A:D):</label><br>
     <input id="sheetRange" style="width:100%" />
   </div>
+  
   <div style="margin-top:8px">
     <button id="save">Save</button>
     <span id="status"></span>
