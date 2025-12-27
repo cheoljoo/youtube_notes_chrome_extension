@@ -4,6 +4,19 @@
 const DEFAULT_SUPABASE_URL = 'https://rjivwtxcgyfpirsvfaqn.supabase.co';
 const DEFAULT_SUPABASE_KEY = 'sb_publishable_2_wthncAW6WCAoEpjILw7Q_UjEZASHo';
 
+// Normalize note shape so bulk inserts have consistent keys
+function normalizeNote(note, userEmail) {
+    return {
+        time: note?.time ?? null,
+        user_email: userEmail,
+        tags: Array.isArray(note?.tags) ? note.tags : [],
+        opinion: note?.opinion ?? null,
+        url: note?.url ?? null,
+        youtube_title: note?.youtube_title ?? note?.youtubeTitle ?? null,
+        youtube_published: note?.youtube_published ?? note?.youtubePublished ?? null
+    };
+}
+
 class SupabaseClient {
     constructor(supabaseUrl, supabaseKey) {
         this.url = supabaseUrl;
@@ -56,7 +69,7 @@ class SupabaseClient {
 
     // 노트 저장 (upsert) - user_email 포함
     async saveNote(note, userEmail) {
-        const noteWithUser = { ...note, user_email: userEmail };
+        const noteWithUser = normalizeNote(note, userEmail);
         return await this.request('/rest/v1/notes', {
             method: 'POST',
             body: JSON.stringify(noteWithUser)
@@ -65,7 +78,7 @@ class SupabaseClient {
 
     // 여러 노트 한번에 저장 - user_email 포함
     async saveNotes(notes, userEmail) {
-        const notesWithUser = notes.map(note => ({ ...note, user_email: userEmail }));
+        const notesWithUser = notes.map(note => normalizeNote(note, userEmail));
         return await this.request('/rest/v1/notes', {
             method: 'POST',
             body: JSON.stringify(notesWithUser)
