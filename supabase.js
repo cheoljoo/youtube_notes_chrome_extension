@@ -141,6 +141,43 @@ async function getSupabaseClient() {
     return new SupabaseClient(url, key);
 }
 
+// Pending deletions are stored locally; remove them remotely for the current user
+async function purgeDeletedNotes(client, currentUserEmail) {
+    const result = await chrome.storage.local.get({ deletedNotes: [] });
+    const list = result.deletedNotes || [];
+    const target = list.filter(d => d && d.user_email === currentUserEmail && Number.isFinite(d.time));
+    const keep = list.filter(d => !(d && d.user_email === currentUserEmail && Number.isFinite(d.time)));
+
+    if (target.length === 0) {
+        return { deleted: 0, pending: keep.length };
+    }
+
+    debugLog(`Deleting ${target.length} remote notes marked for deletion...`);
+    const stillPending = [...keep];
+    let success = 0;
+
+    for (const item of target) {
+        try {
+            await client.deleteNote(item.time, currentUserEmail);
+            success += 1;
+        } catch (err) {
+            debugError('Remote delete failed', err);
+            // keep it for next sync attempt
+            stillPending.push(item);
+        }
+    }
+
+    await chrome.storage.local.set({ deletedNotes: stillPending });
+
+    if (success === target.length) {
+        debugSuccess(`Removed ${success} remote notes`);
+    } else {
+        debugWarning(`Deleted ${success} of ${target.length}; pending will retry next sync`);
+    }
+
+    return { deleted: success, pending: stillPending.length };
+}
+
 // 로컬 노트를 Supabase에 업로드 (백업)
 async function syncToSupabase() {
     debugLog('Starting sync to Supabase...');
@@ -189,6 +226,7 @@ async function syncFromSupabase() {
     debugLog(`Syncing for user: ${userEmail}`);
     
     const client = await getSupabaseClient();
+    await purgeDeletedNotes(client, userEmail);
     debugLog('Fetching remote notes...');
     const remoteNotes = await client.getAllNotes(userEmail);
     debugLog(`Remote notes count: ${remoteNotes.length}`);
@@ -236,15 +274,30 @@ async function syncFromSupabase() {
 async function fullSync() {
     debugLog('=== Starting full sync ===');
     try {
+        // Get local notes count
+        const localResult = await chrome.storage.local.get({ notes: [] });
+        const localNotesCount = (localResult.notes || []).length;
+        
         const uploadResult = await syncToSupabase();
         const downloadResult = await syncFromSupabase();
+        
+        // Get final remote and local counts
+        const userEmail = await getUserIdentifier();
+        const client = await getSupabaseClient();
+        const remoteNotes = await client.getAllNotes(userEmail);
+        const remoteNotesCount = remoteNotes.length;
+        
+        const finalLocalResult = await chrome.storage.local.get({ notes: [] });
+        const finalLocalNotesCount = (finalLocalResult.notes || []).length;
         
         debugSuccess('=== Full sync completed ===');
         return {
             success: true,
             uploaded: uploadResult.uploaded,
             downloaded: downloadResult.downloaded,
-            message: `Sync complete: ${uploadResult.uploaded} uploaded, ${downloadResult.downloaded} downloaded`
+            localCount: finalLocalNotesCount,
+            remoteCount: remoteNotesCount,
+            message: `Sync complete: ${uploadResult.uploaded} uploaded, ${downloadResult.downloaded} downloaded | Local: ${finalLocalNotesCount}, DB: ${remoteNotesCount}`
         };
     } catch (error) {
         debugError('Full sync failed', error);

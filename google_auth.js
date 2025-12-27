@@ -101,20 +101,28 @@ async function ensureUserInfo() {
         await chrome.storage.local.set({ user_email: email });
         await chrome.storage.sync.set({ user_identifier: email });
     }
+    // Persist resolved identifier for consistency across contexts
+    await chrome.storage.sync.set({ user_identifier: email });
     debugLog(`User identifier confirmed: ${email}`);
     return email;
 }
 
 // 비로그인 사용자 식별자 가져오기 (우선 사용)
 async function getUserIdentifier() {
-    const s = await chrome.storage.sync.get({ user_identifier: '' });
+    const s = await chrome.storage.sync.get({ supabase_user_email: '', user_identifier: '' });
+    if (s.supabase_user_email) {
+        const manualId = (s.supabase_user_email || '').trim();
+        debugLog(`Using manual identifier: ${manualId}`);
+        await chrome.storage.sync.set({ user_identifier: manualId });
+        return manualId;
+    }
     if (s.user_identifier) {
         debugLog(`Using stored identifier: ${s.user_identifier}`);
         return s.user_identifier;
     }
-    const id = await ensureUserInfo();
-    // ensureUserInfo already sets identifier when needed
-    return id;
+    const msg = 'Sync email/ID is not set. Open Options and set "Manual user email / ID".';
+    debugWarning(msg);
+    throw new Error(msg);
 }
 
 // 로그아웃

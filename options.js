@@ -5,6 +5,7 @@ document.getElementById('save').addEventListener('click', async ()=>{
   const sheetRange = document.getElementById('sheetRange').value.trim() || 'Sheet1!A:D';
   const supabaseUrl = document.getElementById('supabaseUrl').value.trim();
   const supabaseKey = document.getElementById('supabaseKey').value.trim();
+  const manualUserEmail = document.getElementById('manualUserEmail').value.trim();
   await chrome.storage.sync.set({
     gemini_api_key:apiKey, 
     gemini_model:model, 
@@ -12,7 +13,9 @@ document.getElementById('save').addEventListener('click', async ()=>{
     sheetRange, 
     api_type:'palm',
     supabase_url: supabaseUrl,
-    supabase_key: supabaseKey
+    supabase_key: supabaseKey,
+    supabase_user_email: manualUserEmail,
+    user_identifier: manualUserEmail || ''
   });
   document.getElementById('status').textContent='Saved';
   document.getElementById('status').style.color='green';
@@ -195,7 +198,8 @@ async function load(){
     spreadsheetId:'',
     sheetRange:'Sheet1!A:D',
     supabase_url:'',
-    supabase_key:''
+    supabase_key:'',
+    supabase_user_email:''
   });
   document.getElementById('apiKey').value = s.gemini_api_key || '';
   document.getElementById('model').value = s.gemini_model || 'text-bison-001';
@@ -204,6 +208,7 @@ async function load(){
   // Prefill defaults if not yet configured
   document.getElementById('supabaseUrl').value = s.supabase_url || 'https://rjivwtxcgyfpirsvfaqn.supabase.co';
   document.getElementById('supabaseKey').value = s.supabase_key || 'sb_publishable_2_wthncAW6WCAoEpjILw7Q_UjEZASHo';
+  document.getElementById('manualUserEmail').value = s.supabase_user_email || '';
 }
 
 load();

@@ -49,6 +49,11 @@
     <input id="supabaseKey" style="width:100%" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." />
   </div>
   <div style="margin-top:8px">
+    <label>Manual user email / ID (optional):</label><br>
+    <input id="manualUserEmail" style="width:100%" placeholder="example@email.com or custom-id" />
+    <div style="font-size:0.85em;color:#666;margin-top:4px;">If set, this is used as the sync user key instead of Google login or the generated uid.</div>
+  </div>
+  <div style="margin-top:8px">
     <button id="save">Save</button>
     <button id="testConnection" style="margin-left:8px">Test Connection</button>
     <button id="testRest" style="margin-left:8px">Test REST</button>

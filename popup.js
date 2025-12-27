@@ -108,6 +108,30 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // Delete a note locally and mark for remote deletion
+    async function deleteNoteByTime(time) {
+        const userEmail = await getUserIdentifier();
+
+        const { notes = [], deletedNotes = [] } = await new Promise((resolve) => {
+            chrome.storage.local.get({ notes: [], deletedNotes: [] }, resolve);
+        });
+
+        const idx = notes.findIndex(n => n.time === time);
+        if (idx === -1) {
+            throw new Error('Note not found');
+        }
+
+        const updatedNotes = [...notes.slice(0, idx), ...notes.slice(idx + 1)];
+
+        // dedupe deletedNotes by time+user
+        const remainingDeletes = (deletedNotes || []).filter(d => !(d && d.time === time && d.user_email === userEmail));
+        remainingDeletes.push({ time, user_email: userEmail });
+
+        await new Promise((resolve) => {
+            chrome.storage.local.set({ notes: updatedNotes, deletedNotes: remainingDeletes }, resolve);
+        });
+    }
+
     // 수동 새로고침 버튼
     if (refreshBtn) refreshBtn.addEventListener('click', function(){
         renderNotes();
@@ -252,7 +276,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 const metaLine = `${note.url ? `<a href="${note.url}" target="_blank">Link</a> | ` : ''}${publishedDisplay ? `Published: ${publishedDisplay} | ` : ''}Created: ${new Date(note.time).toLocaleString('en-US')}`;
                 return `
                 <div class="note-item">
-                    ${titleHtml}
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                        <div style="flex:1;min-width:0;">${titleHtml}</div>
+                        <button class="note-delete" data-time="${note.time}" title="Delete" style="background-color:#9370DB;color:white;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.85em;white-space:nowrap;">remove</button>
+                    </div>
                     <div class="note-tags">${tagsHtml}</div>
                     <div class="opinion">${note.opinion ? note.opinion : ''}</div>
                     <div style="font-size:0.8em;color:#888;">${metaLine}</div>
@@ -268,6 +295,26 @@ document.addEventListener('DOMContentLoaded', function () {
                     currentFilter = tag;
                     renderNotes();
                     renderFilterTags();
+                });
+            });
+
+            // attach delete handlers
+            notesList.querySelectorAll('.note-delete').forEach(btn => {
+                btn.addEventListener('click', async function(e){
+                    e.stopPropagation();
+                    const time = Number(this.getAttribute('data-time'));
+                    if (!Number.isFinite(time)) return;
+                    if (!confirm('Delete this note?')) return;
+                    try {
+                        await deleteNoteByTime(time);
+                        debugSuccess('Note deleted');
+                        renderNotes();
+                        renderTagList();
+                        renderFilterTags();
+                    } catch (err) {
+                        debugError('Delete failed', err);
+                        alert(err.message || 'Delete failed');
+                    }
                 });
             });
             updateFilterInfo();
