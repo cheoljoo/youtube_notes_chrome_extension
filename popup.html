@@ -17,6 +17,9 @@
         .opinion { margin: 3px 0; white-space:pre-wrap; }
         #filter-info { margin-top:8px; font-size:0.9em; color:#444; }
     </style>
+    <script src="debug_logger.js"></script>
+    <script src="google_auth.js"></script>
+    <script src="supabase.js"></script>
     <script src="popup.js"></script>
 </head>
 <body>
@@ -32,6 +35,13 @@
     <button id="save-btn">Save</button>
     <button id="refresh-btn" style="margin-left:8px;">Refresh List</button>
     <button id="download-btn" style="margin-left:8px;">Download CSV</button>
+    <button id="settings-btn" style="margin-left:8px;">Settings</button>
+    <button id="sync-btn" style="margin-left:8px;background:#4CAF50;color:white;border:none;padding:5px 10px;border-radius:3px;cursor:pointer;">⇅ Sync</button>
+    <div id="sync-status" style="margin-top:8px;font-size:0.85em;color:#666;"></div>
+    <details style="margin-top:10px;">
+        <summary style="cursor:pointer;color:#0366d6;font-size:0.85em;">Debug Log</summary>
+        <div id="debug-log" style="margin-top:8px;padding:8px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;font-family:monospace;font-size:0.75em;max-height:150px;overflow-y:auto;"></div>
+    </details>
     <div id="filter-tags" style="margin-top:10px;font-size:0.95em"></div>
     <div id="filter-info"></div>
     <div id="notes-list"></div>

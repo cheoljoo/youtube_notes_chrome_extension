@@ -14,7 +14,8 @@
   "host_permissions": [
     "https://www.youtube.com/*",
     "https://video.google.com/*",
-    "https://*.googleapis.com/*"
+    "https://*.googleapis.com/*",
+    "https://*.supabase.co/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -23,6 +24,9 @@
   "options_page": "options.html",
   "background": {
     "service_worker": "background.js"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://*.supabase.co https://rjivwtxcgyfpirsvfaqn.supabase.co https://accounts.google.com https://apis.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com https://www.gstatic.com https://*.firebaseapp.com"
   },
   "icons": {
     "16": "images/icon-16.png",

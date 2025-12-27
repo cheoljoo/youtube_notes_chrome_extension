@@ -4,6 +4,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const saveBtn = document.getElementById('save-btn');
     const refreshBtn = document.getElementById('refresh-btn');
     const downloadBtn = document.getElementById('download-btn');
+    const settingsBtn = document.getElementById('settings-btn');
+    const syncBtn = document.getElementById('sync-btn');
+    const syncStatus = document.getElementById('sync-status');
     const notesList = document.getElementById('notes-list');
     const filterInfo = document.getElementById('filter-info');
     const filterTags = document.getElementById('filter-tags');
@@ -85,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function () {
             chrome.storage.local.get({notes: []}, function(result) {
                 const notes = result.notes || [];
                 notes.unshift(note); // 최신순
-                chrome.storage.local.set({notes}, function() {
+                chrome.storage.local.set({notes}, async function() {
                     tagsInput.value = '';
                     opinionInput.value = '';
                     // merge tags into sync storage for quick reuse
@@ -97,6 +100,9 @@ document.addEventListener('DOMContentLoaded', function () {
                             renderTagList();
                         });
                     });
+                    
+                    // Auto-sync to Supabase after saving
+                    await autoSyncToSupabase(note);
                 });
             });
         });
@@ -107,6 +113,84 @@ document.addEventListener('DOMContentLoaded', function () {
         renderNotes();
         renderFilterTags();
     });
+
+    // 옵션 페이지 열기
+    if (settingsBtn) settingsBtn.addEventListener('click', function(){
+        try {
+            chrome.runtime.openOptionsPage();
+        } catch (e) {
+            debugError('Failed to open options page', e);
+        }
+    });
+
+    // Sync 버튼 - 양방향 동기화
+    if (syncBtn) syncBtn.addEventListener('click', async function(){
+        debugLog('=== Sync button clicked ===');
+            try {
+                const syncUserId = await getUserIdentifier();
+                debugLog(`Sync user id: ${syncUserId}`);
+            } catch(e) {
+                debugWarning('Could not resolve user identifier before sync');
+            }
+        syncBtn.disabled = true;
+        syncBtn.textContent = 'Syncing...';
+        syncStatus.textContent = 'Synchronizing with Supabase...';
+        syncStatus.style.color = '#666';
+        
+        try {
+            debugLog('Calling fullSync()...');
+            const result = await fullSync();
+            debugSuccess(`Sync result: ${result.message}`);
+            syncStatus.textContent = result.message;
+            syncStatus.style.color = 'green';
+            debugLog('Refreshing UI...');
+            renderNotes();
+            renderTagList();
+            renderFilterTags();
+            debugLog('UI refresh complete');
+        } catch (e) {
+            debugError('Sync failed', e);
+            syncStatus.textContent = 'Sync failed: ' + e.message;
+            syncStatus.style.color = 'red';
+        } finally {
+            syncBtn.disabled = false;
+            syncBtn.textContent = '⇅ Sync';
+            setTimeout(() => { syncStatus.textContent = ''; }, 5000);
+        }
+    });
+
+    // 자동 동기화 함수 (저장 시)
+    async function autoSyncToSupabase(note) {
+        debugLog('Auto-sync triggered for new note');
+        try {
+            const settings = await chrome.storage.sync.get({supabase_url: '', supabase_key: ''});
+            if (!settings.supabase_url || !settings.supabase_key) {
+                debugWarning('Supabase not configured, skipping auto-sync');
+                return; // Supabase not configured
+            }
+            
+            debugLog('Getting user info for auto-sync...');
+            const userEmail = await getUserIdentifier();
+                debugLog(`Auto-sync user id: ${userEmail}`);
+            debugLog('Getting Supabase client...');
+            const client = await getSupabaseClient();
+            debugLog('Saving note to Supabase...');
+            await client.saveNote(note, userEmail);
+            debugSuccess('Auto-sync successful');
+            if (syncStatus) {
+                syncStatus.textContent = '✓ Synced to cloud';
+                syncStatus.style.color = 'green';
+                setTimeout(() => { syncStatus.textContent = ''; }, 2000);
+            }
+        } catch (e) {
+            debugError('Auto-sync failed', e);
+            if (e.message.includes('로그인')) {
+                syncStatus.textContent = '⚠ Google 로그인 필요';
+                syncStatus.style.color = 'orange';
+            }
+            // Silent fail for auto-sync
+        }
+    }
 
     // CSV 다운로드
     if (downloadBtn) downloadBtn.addEventListener('click', function () {
