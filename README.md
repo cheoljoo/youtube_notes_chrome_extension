@@ -1,72 +1,88 @@
 # YouTube → Notes
 
-YouTube 동영상 정보를 효율적으로 관리하는 Chrome 확장 프로그램입니다.
+> **Language**: English | [한국어 (Korean)](README.ko.md)
 
-## 주요 기능
+A Chrome extension to efficiently manage YouTube video notes and information.
 
-- ✅ **YouTube 정보 자동 추출**: 동영상 제목, 게시 시간, URL 자동 저장
-- ✅ **스마트 태그 관리**: 기존 태그 버튼 클릭으로 빠르게 추가
-- ✅ **개인 의견 저장**: 각 영상별 의견 기록
-- ✅ **태그 필터링**: 특정 태그로 노트 검색
-- ✅ **CSV 내보내기**: 모든 노트를 `youtube_notes.csv`로 다운로드
-- ✅ **오프라인 저장**: 로컬 스토리지에 안전하게 저장
+## Key Features
 
-## 설치 방법
+- ✅ **Auto-extract YouTube info**: Automatically saves video title, publish time, and URL
+- ✅ **Smart tag management**: Quickly add tags via existing tag buttons
+- ✅ **Save personal notes**: Record your thoughts for each video
+- ✅ **Tag filtering**: Search notes by specific tags
+- ✅ **CSV export**: Download all notes as `youtube_notes.csv`
+- ✅ **Offline storage**: Safely stored in local storage
+- ✅ **Personal Supabase sync**: Use your own free Supabase project for more storage and reliable sync
 
-### 개발 환경에서 테스트
+## Personal Database Setup (Optional)
 
-1. 이 폴더를 `C:\code\youtube_notes_chrome_extension` 에 복제
-2. Chrome 주소창에 `chrome://extensions` 입력
-3. 우측 상단의 "개발자 모드" 토글 켜기
-4. "압축해제된 확장 프로그램 로드" 클릭
-5. 이 폴더 선택
+If you want your own dedicated database for more storage and better control:
 
-### Chrome Web Store 설치 (공개 후)
+1. Follow the guide in [SUPABASE_SETUP.en.md](SUPABASE_SETUP.en.md) (English) or [SUPABASE_SETUP.md](SUPABASE_SETUP.md) (Korean)
+2. Create a Supabase project and database
+3. Configure Settings in the extension with your Supabase URL and API key
+4. Enjoy increased storage capacity on the free tier!
 
-Chrome Web Store에서 "YouTube → Notes"를 검색하여 설치하세요.
+## Installation
 
-## 사용 방법
+### Testing in Development Mode
 
-1. YouTube 영상 페이지에서 확장 아이콘 클릭
-2. 태그 선택 또는 입력 (기존 태그 버튼으로 빠른 추가)
-3. 개인 의견 작성
-4. "저장" 클릭
-5. 목록에서 제목, 게시 시간, 태그 확인 가능
-6. 특정 태그 클릭으로 필터링
-7. "CSV 다운로드" 클릭으로 모든 노트 내보내기
+1. Clone this folder to `C:\code\youtube_notes_chrome_extension`
+2. Open Chrome and navigate to `chrome://extensions`
+3. Enable "Developer mode" toggle in the top-right
+4. Click "Load unpacked"
+5. Select this folder
 
-## 파일 구조
+### Chrome Web Store Installation (After Publication)
+
+Search for "YouTube → Notes" in the Chrome Web Store and install.
+
+## How to Use
+
+1. Click the extension icon on a YouTube video page
+2. Select or enter tags (click existing tag buttons for quick add)
+3. Write your personal notes
+4. Click "Save"
+5. View title, publish time, and tags in the list
+6. Filter by clicking specific tags
+7. Export all notes by clicking "Download CSV"
+
+## File Structure
 
 ```
 youtube_notes_chrome_extension/
-├── manifest.json          # 확장 설정
-├── popup.html            # 팝업 UI
-├── popup.js              # 팝업 로직 (저장, 렌더링, 필터, CSV)
-├── options.html          # 설정 페이지
-├── options.js            # 설정 로직
-├── background.js         # 백그라운드 서비스 워커
-├── content_script.js     # 콘텐츠 스크립트 (미사용)
+├── manifest.json          # Extension configuration
+├── popup.html            # Popup UI
+├── popup.js              # Popup logic (save, render, filter, CSV)
+├── options.html          # Settings page
+├── options.js            # Settings logic
+├── background.js         # Background service worker
+├── content_script.js     # Content script (unused)
+├── supabase.js           # Supabase sync helpers
+├── google_auth.js        # Google authentication
+├── debug_logger.js       # Debug logging utility
 ├── images/
 │   ├── icon-16.png
 │   ├── icon-48.png
 │   └── icon-128.png
-├── generate_icons.html   # 아이콘 생성 도구
-└── README.md             # 이 파일
+├── generate_icons.html   # Icon generation tool
+└── README.md             # This file
 ```
 
-## 데이터 저장 방식
+## Data Storage
 
-- **로컬 스토리지** (`chrome.storage.local`): 모든 노트 저장
-- **동기 스토리지** (`chrome.storage.sync`): 태그 목록 저장
+- **Local storage** (`chrome.storage.local`): All notes stored locally
+- **Sync storage** (`chrome.storage.sync`): Tag list and settings
+- **Supabase (optional)**: Personal database for cloud sync and backup
 
-## 개발 및 수정
+## Development & Modification
 
-JavaScript 파일을 수정한 뒤 Chrome 확장 페이지에서 새로고침 버튼 클릭하여 반영됩니다.
+After editing JavaScript files, click the refresh button on the Chrome extensions page to apply changes.
 
-## 라이선스
+## License
 
 MIT License
 
-## 기여
+## Contributing
 
-이슈 및 풀 요청은 언제든 환영합니다.
+Issues and pull requests are always welcome.
