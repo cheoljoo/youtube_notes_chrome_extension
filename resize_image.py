@@ -38,7 +38,7 @@ def resize_letterbox(src_path: str, out_path: str):
 
 def main():
     src = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_SRC
-    exit(resize_letterbox(src, OUT_PATH))
+    exit(resize_letterbox(src, '640_' + os.path.basename(src)))
 
 
 if __name__ == '__main__':

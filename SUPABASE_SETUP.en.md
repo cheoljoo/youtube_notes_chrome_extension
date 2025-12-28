@@ -15,7 +15,7 @@ This guide walks through creating the `notes` table, basic policies, getting API
 In Dashboard → SQL Editor → New query, run:
 
 ```sql
--- Create notes table (with user_email)
+-- notes 테이블 생성 (user_email 컬럼 추가)
 CREATE TABLE notes (
   id BIGSERIAL PRIMARY KEY,
   time BIGINT NOT NULL,
@@ -29,21 +29,43 @@ CREATE TABLE notes (
   UNIQUE(time, user_email)
 );
 
--- Indexes for performance
+-- time 컬럼에 인덱스 생성 (검색 속도 향상)
 CREATE INDEX idx_notes_time ON notes(time DESC);
+
+-- user_email 인덱스 생성 (사용자별 검색 속도 향상)
 CREATE INDEX idx_notes_user_email ON notes(user_email);
+
+-- tags 배열에 GIN 인덱스 생성 (태그 검색 속도 향상)
 CREATE INDEX idx_notes_tags ON notes USING GIN(tags);
 
--- Enable Row Level Security
+-- RLS (Row Level Security) 활성화
 ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
 
--- Personal use policy (simplest): everyone can access everything
--- For personal projects or testing only
-DROP POLICY IF EXISTS "Enable all access for all users" ON notes;
+-- 사용자별 데이터 격리 정책
+-- 각 사용자는 자신의 user_email과 일치하는 노트만 접근 가능
+CREATE POLICY "Users can only access their own notes" ON notes
+  FOR ALL
+  USING (user_email = current_setting('request.headers')::json->>'x-user-email')
+  WITH CHECK (user_email = current_setting('request.headers')::json->>'x-user-email');
+
+-- 또는 간단한 버전 (모든 사용자가 모든 데이터 접근 가능 - 개인용)
+-- 프로덕션에서는 위의 정책 사용 권장
+DROP POLICY IF EXISTS "Users can only access their own notes" ON notes;
 CREATE POLICY "Enable all access for all users" ON notes
   FOR ALL
   USING (true)
   WITH CHECK (true);
+
+create or replace function public.get_notes_table_size_json()
+returns jsonb
+language sql
+stable
+security definer
+as $$
+  select jsonb_build_object('bytes', pg_total_relation_size('public.notes'::regclass));
+$$;
+
+grant execute on function public.get_notes_table_size_json() to anon;
 ```
 
 Table schema notes:

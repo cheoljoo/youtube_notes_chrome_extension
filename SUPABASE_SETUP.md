@@ -57,6 +57,17 @@ CREATE POLICY "Enable all access for all users" ON notes
   FOR ALL
   USING (true)
   WITH CHECK (true);
+
+create or replace function public.get_notes_table_size_json()
+returns jsonb
+language sql
+stable
+security definer
+as $$
+  select jsonb_build_object('bytes', pg_total_relation_size('public.notes'::regclass));
+$$;
+
+grant execute on function public.get_notes_table_size_json() to anon;
 ```
 
 ### 테이블 스키마 설명
