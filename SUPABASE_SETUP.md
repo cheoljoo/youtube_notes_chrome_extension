@@ -224,3 +224,99 @@ DELETE ${SUPABASE_URL}/rest/v1/notes?time=eq.1234567890&user_email=eq.user@examp
 - **유료 플랜**: 
   - 더 많은 용량과 기능 필요 시
   - 프로덕션 환경 권장
+
+## 11. DB 사이즈 엔드포인트 설정
+
+확장 프로그램에서 표시하는 “DB 크기”를 서버에서 정확히 가져오려면 아래 중 하나를 설정하세요.
+기본 위의 내용에 합쳐서 추가해도 될 듯!
+아래 A. sql 2개를 Query에 추가한후에 그 부분을 선택하여 오른쪽 마우스를 누르고 RUN을 해준다. (처음에 한번에 넣는 것도 방법이다.)
+
+### A. `notes` 테이블 전체 크기 (권장)
+
+아래 SQL 함수는 `public.notes`의 실제 저장 크기를 반환합니다. 테이블 데이터, 인덱스, TOAST(큰 값 저장소)를 포함합니다.
+
+```sql
+create or replace function public.get_notes_table_size_json()
+returns jsonb
+language sql
+stable
+security definer
+as $$
+  select jsonb_build_object('bytes', pg_total_relation_size('public.notes'::regclass));
+$$;
+```
+
+권한 부여(직접 RPC 호출 시):
+
+```sql
+grant execute on function public.get_notes_table_size_json() to anon;
+```
+
+RPC 엔드포인트:
+
+- URL: `<SUPABASE_URL>/rest/v1/rpc/get_notes_table_size_json`
+- 헤더: `apikey: <anon-key>`, `Accept: application/json`, `Content-Type: application/json`
+- 바디: `{}` (빈 JSON)
+
+테스트 예시:
+
+```bash
+curl -X POST \
+  -H "apikey: <anon-key>" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  "<SUPABASE_URL>/rest/v1/rpc/get_notes_table_size_json" \
+  -d '{}'
+```
+
+PowerShell:
+
+```powershell
+$url = "<SUPABASE_URL>/rest/v1/rpc/get_notes_table_size_json"
+$headers = @{ apikey = "<anon-key>"; Accept = "application/json"; "Content-Type" = "application/json" }
+Invoke-RestMethod -Method Post -Uri $url -Headers $headers -Body "{}"
+```
+
+반환 형식: `{ "bytes": 123456 }`
+
+### B. 전체 데이터베이스 크기 (선택)
+
+프로젝트 전체 DB 크기가 필요하다면 다음 함수를 사용하세요.
+
+```sql
+create or replace function public.get_db_size_bytes_json()
+returns jsonb
+language sql
+stable
+security definer
+as $$
+  select jsonb_build_object('bytes', pg_database_size(current_database()));
+$$;
+```
+
+주의: 이 값은 모든 테이블과 인덱스를 포함한 전체 데이터베이스 크기입니다.
+
+### C. Edge Function 사용 (보안 권장)
+
+서비스 롤 키를 클라이언트에 노출하지 않으려면 Edge Function을 만들어 위 RPC를 서버에서 호출하도록 합니다.
+
+- 예시 엔드포인트: `https://<project-ref>.functions.supabase.co/db-size`
+- 함수 내부에서 `rpc('get_notes_table_size_json')` 호출 후 JSON 그대로 반환
+- 비밀값: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+
+### D. 확장 프로그램에 연결하기
+
+- 확장 프로그램은 설정된 Supabase URL을 기반으로 RPC 엔드포인트(`<SUPABASE_URL>/rest/v1/rpc/get_notes_table_size_json`)를 자동으로 호출합니다. 별도의 옵션 입력은 필요하지 않습니다.
+- Edge Function을 사용하고 싶다면 `popup.js`의 `DB_SIZE_ENDPOINT_DEFAULT` 상수에 해당 URL을 지정하면 우선 사용됩니다.
+- 엔드포인트가 정상 동작하면 팝업 로그에 `authoritative size ...`가 표시되며, 실패하거나 미설정 시 로컬 추정치 `size estimate ...`를 사용합니다.
+
+### 사용자 식별자 설정 (필수)
+
+- Options 페이지의 "Manual user email / ID"는 필수입니다. 해당 값은 동기화 시 `user_email` 키로 사용되어 사용자별 노트를 구분합니다.
+- 저장 시 값이 비어 있으면 Settings가 저장되지 않으며 경고가 표시됩니다.
+
+### 자주 묻는 질문
+
+- 이 값에 “내용(데이터)”이 포함되나요? → 네, `pg_total_relation_size`는 테이블 데이터와 인덱스, TOAST까지 포함한 실제 저장 용량입니다.
+- 사용자별 크기만 보고 싶어요 → 별도 함수로 `user_email` 필터를 적용해 행 수와 대략적인 행 바이트를 합산할 수 있습니다.
+

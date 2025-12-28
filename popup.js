@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const filterTags = document.getElementById('filter-tags');
     let currentFilter = null; // string or null
     const loadDbBtn = document.getElementById('load-db-btn');
+    const DB_SIZE_LIMIT_MB = 450;
+    const DB_SIZE_HELP_URL = 'https://app.supabase.com/';
+    const DB_SIZE_ENDPOINT_DEFAULT = '';
 
     // YouTube 메타정보를 탭에서 추출 (Promise 반환)
     function getYouTubeMeta(tabId){
@@ -146,6 +149,91 @@ document.addEventListener('DOMContentLoaded', function () {
         const client = await getSupabaseClient();
         await client.clearNotes(userEmail);
         debugSuccess('All remote notes cleared');
+    }
+
+    function warnIfDbLarge(remoteNotes, contextLabel='DB') {
+        try {
+            const encoder = new TextEncoder();
+            const bytes = encoder.encode(JSON.stringify(remoteNotes || [])).length;
+            const mb = bytes / (1024 * 1024);
+            const kb = bytes / 1024;
+            debugLog(`${contextLabel} size estimate: ${mb.toFixed(2)} MB (${kb.toFixed(1)} KB)`);
+            if (mb >= DB_SIZE_LIMIT_MB) {
+                const msg = `Warning: Your notes DB is about ${mb.toFixed(1)} MB (${kb.toFixed(0)} KB) (limit ${DB_SIZE_LIMIT_MB} MB). See ${DB_SIZE_HELP_URL}`;
+                alert(msg);
+                if (syncStatus) {
+                    syncStatus.textContent = msg;
+                    syncStatus.style.color = 'orange';
+                }
+            }
+        } catch (e) {
+            debugError('DB size check failed', e);
+        }
+    }
+
+    async function fetchDbSizeFromEndpoint(endpoint) {
+        try {
+            let res;
+            if (endpoint.includes('/rest/v1/rpc/')) {
+                const settings = await chrome.storage.sync.get({ supabase_key: '' });
+                res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'apikey': settings.supabase_key || ''
+                    },
+                    body: '{}'
+                });
+            } else {
+                res = await fetch(endpoint, { method: 'GET', headers: { 'Accept': 'application/json' } });
+            }
+            const data = await res.json().catch(()=>null);
+            if (data == null) return null;
+            if (typeof data === 'number') return { bytes: Number(data) };
+            if (typeof data.bytes === 'number') return { bytes: data.bytes };
+            return null;
+        } catch (e) {
+            debugError('fetchDbSizeFromEndpoint failed', e);
+            return null;
+        }
+    }
+
+    // Prefer authoritative server endpoint if configured or default; fallback to local estimate
+    async function checkDbSizeAuthoritative(contextLabel, fallbackNotes = null) {
+        try {
+            const s = await chrome.storage.sync.get({ supabase_url: '', supabase_key: '' });
+            let endpoint = (DB_SIZE_ENDPOINT_DEFAULT || '').trim();
+            if (!endpoint && s.supabase_url) {
+                const base = s.supabase_url.replace(/\/$/, '');
+                endpoint = `${base}/rest/v1/rpc/get_notes_table_size_json`;
+            }
+            if (!endpoint) {
+                if (fallbackNotes) warnIfDbLarge(fallbackNotes, contextLabel);
+                return;
+            }
+            const result = await fetchDbSizeFromEndpoint(endpoint);
+            if (!result || typeof result.bytes !== 'number') {
+                debugWarning('DB size endpoint returned unexpected payload; using estimate');
+                if (fallbackNotes) warnIfDbLarge(fallbackNotes, contextLabel);
+                return;
+            }
+            const bytes = result.bytes;
+            const mb = bytes / (1024 * 1024);
+            const kb = bytes / 1024;
+            debugLog(`${contextLabel} authoritative size: ${mb.toFixed(2)} MB (${kb.toFixed(0)} KB)`);
+            if (mb >= DB_SIZE_LIMIT_MB) {
+                const msg = `Warning: Your notes DB is about ${mb.toFixed(1)} MB (${kb.toFixed(0)} KB) (limit ${DB_SIZE_LIMIT_MB} MB). See ${DB_SIZE_HELP_URL}`;
+                alert(msg);
+                if (syncStatus) {
+                    syncStatus.textContent = msg;
+                    syncStatus.style.color = 'orange';
+                }
+            }
+        } catch (e) {
+            debugError('Authoritative DB size check failed; using estimate', e);
+            if (fallbackNotes) warnIfDbLarge(fallbackNotes, contextLabel);
+        }
     }
 
     // Delete a note locally and mark for remote deletion
@@ -316,8 +404,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const userEmail = await getUserIdentifier();
             debugLog(`Load DB for user: ${userEmail}`);
             const client = await getSupabaseClient();
-            const remoteNotes = await client.getAllNotes(userEmail);
+            const remoteNotes = await client.getAllNotesAll(userEmail);
             debugLog(`Remote notes fetched: ${remoteNotes.length}`);
+            await checkDbSizeAuthoritative('Load DB', remoteNotes);
             // convert remote to local shape
             const converted = (remoteNotes || []).map(r => ({
                 time: r?.time ?? Date.now(),
@@ -385,6 +474,16 @@ document.addEventListener('DOMContentLoaded', function () {
             renderTagList();
             renderFilterTags();
             debugLog('UI refresh complete');
+
+            // Check DB size after sync
+            try {
+                const userEmail = await getUserIdentifier();
+                const client = await getSupabaseClient();
+                const remoteNotes = await client.getAllNotesAll(userEmail);
+                await checkDbSizeAuthoritative('Sync', remoteNotes);
+            } catch (sizeErr) {
+                debugError('DB size check after sync failed', sizeErr);
+            }
         } catch (e) {
             debugError('Sync failed', e);
             syncStatus.textContent = 'Sync failed: ' + e.message;

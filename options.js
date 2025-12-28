@@ -2,11 +2,17 @@ document.getElementById('save').addEventListener('click', async ()=>{
   const supabaseUrl = document.getElementById('supabaseUrl').value.trim();
   const supabaseKey = document.getElementById('supabaseKey').value.trim();
   const manualUserEmail = document.getElementById('manualUserEmail').value.trim();
+  if (!manualUserEmail) {
+    debugWarning('Manual user email/ID is required');
+    document.getElementById('status').textContent='Please enter your email or ID';
+    document.getElementById('status').style.color='red';
+    return;
+  }
   await chrome.storage.sync.set({
     supabase_url: supabaseUrl,
     supabase_key: supabaseKey,
     supabase_user_email: manualUserEmail,
-    user_identifier: manualUserEmail || ''
+    user_identifier: manualUserEmail
   });
   document.getElementById('status').textContent='Saved';
   document.getElementById('status').style.color='green';

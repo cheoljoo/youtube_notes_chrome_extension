@@ -119,6 +119,26 @@ class SupabaseClient {
         }, 'getAllNotes');
     }
 
+    // 모든 노트 가져오기 - 페이징으로 전부 수집 (현재 사용자)
+    async getAllNotesAll(userEmail, pageSize = 1000) {
+        let offset = 0;
+        let all = [];
+        while (true) {
+            const page = await this.request(`/rest/v1/notes?select=*&user_email=eq.${encodeURIComponent(userEmail)}&order=time.desc`, {
+                method: 'GET',
+                extraHeaders: {
+                    Range: `${offset}-${offset + pageSize - 1}`,
+                    Prefer: 'count=exact'
+                }
+            }, 'getAllNotesPage');
+            if (!Array.isArray(page) || page.length === 0) break;
+            all = all.concat(page);
+            if (page.length < pageSize) break;
+            offset += pageSize;
+        }
+        return all;
+    }
+
     // 특정 시간 이후의 노트만 가져오기 (현재 사용자만)
     async getNotesAfter(timestamp, userEmail) {
         return await this.request(`/rest/v1/notes?select=*&user_email=eq.${encodeURIComponent(userEmail)}&time=gt.${timestamp}&order=time.desc`, {
