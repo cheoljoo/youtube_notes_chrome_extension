@@ -3,27 +3,45 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Options</title></head>
 <body style="font-family:Arial;padding:12px;min-width:360px">
   <h3>Settings</h3>
-  <div>
-    <label>PaLM API Key (Gemini):</label><br>
-    <input id="apiKey" style="width:100%" />
+  
+  <hr style="margin:16px 0">
+  <h4>Supabase Sync Settings</h4>
+  <div style="margin-top:6px;padding:10px;background:#f7fbff;border:1px solid #dbe9ff;border-radius:6px;color:#0b3d91">
+    <div style="font-weight:600;margin-bottom:6px">Personal DB (개인용 Supabase) 안내</div>
+    <div style="font-size:0.95em;line-height:1.45">
+      Using your own free Supabase project gives you a personal DB, so even the free tier provides ample storage for reliable use.<br>
+      How to proceed: Create your Supabase project, then enter <strong>Supabase URL</strong> and <strong>Supabase API Key (anon/public)</strong> in Settings, and set <strong>Manual user email / ID</strong> (required).
+      See guides:
+      <a href="https://github.com/cheoljoo/youtube_notes_chrome_extension/blob/251227/supabase/SUPA_setup_for_personal.en.md" target="_blank" rel="noopener">SUPA_setup_for_personal.en.md (English)</a>
+      &nbsp;|&nbsp;
+      <a href="https://github.com/cheoljoo/youtube_notes_chrome_extension/blob/251227/supabase/SUPA_setup_for_personal.md" target="_blank" rel="noopener">SUPA_setup_for_personal.md (Korean)</a>
+    </div>
   </div>
   <div style="margin-top:8px">
-    <label>Model (e.g. text-bison-001):</label><br>
-    <input id="model" style="width:100%" />
+    <label>Supabase URL:</label><br>
+    <input id="supabaseUrl" style="width:100%" placeholder="https://xxxxx.supabase.co" />
   </div>
   <div style="margin-top:8px">
-    <label>Spreadsheet ID:</label><br>
-    <input id="sheetId" style="width:100%" />
+    <label>Supabase API Key (anon/public):</label><br>
+    <input id="supabaseKey" style="width:100%" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." />
   </div>
   <div style="margin-top:8px">
-    <label>Sheet Range (e.g. Sheet1!A:D):</label><br>
-    <input id="sheetRange" style="width:100%" />
+    <label>Manual user email / ID (required):</label><br>
+    <input id="manualUserEmail" style="width:100%" placeholder="example@email.com or custom-id" required />
+    <div style="font-size:0.85em;color:#666;margin-top:4px;">This identifier is required and will be used as the sync user key.</div>
   </div>
   <div style="margin-top:8px">
     <button id="save">Save</button>
+    <button id="testConnection" style="margin-left:8px">Test Connection</button>
+    <button id="testRest" style="margin-left:8px">Test REST</button>
     <span id="status"></span>
   </div>
+  <details style="margin-top:16px;">
+    <summary style="cursor:pointer;color:#0366d6;font-size:0.9em;">Debug Log</summary>
+    <div id="debug-log" style="margin-top:8px;padding:8px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;font-family:monospace;font-size:0.8em;max-height:200px;overflow-y:auto;white-space:pre-wrap;"></div>
+  </details>
 
+  <script src="debug_logger.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

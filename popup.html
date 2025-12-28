@@ -5,18 +5,35 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>YouTube Notes</title>
     <style>
-        body { font-family: Arial, sans-serif; min-width: 300px; margin: 10px; }
+        html, body { 
+            font-family: Arial, sans-serif; 
+            width: 650px;
+            margin: 0; 
+            padding: 10px;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
         .input-group { margin-bottom: 10px; }
         label { display: block; margin-bottom: 2px; }
         input, textarea { width: 100%; box-sizing: border-box; }
-        #notes-list { margin-top: 12px; max-height: 220px; overflow-y: auto; border-top: 1px solid #f0f0f0; padding-top:8px; }
+        textarea { resize: none; }
+        #notes-list { 
+            margin-top: 12px; 
+            max-height: 400px;
+            overflow-y: auto; 
+            border-top: 1px solid #f0f0f0; 
+            padding-top: 8px; 
+        }
         .note-item { border-bottom: 1px solid #eee; padding: 8px 4px; display:block; }
         .note-tags { margin-bottom:6px; }
         .note-tag { display:inline-block; margin:2px 6px 2px 0; padding:3px 8px; border-radius:12px; background:#eef6ff; color:#0366d6; font-size:0.85em; cursor:pointer; border:1px solid #d6e9ff; }
-        .tag-pill { margin:3px 4px;padding:4px 8px;border-radius:12px;border:1px solid #ccc;background:#f6f6f6;cursor:pointer }
+        .tag-pill { margin:3px 4px;padding:4px 8px;border-radius:12px;border:1px solid #ccc;background:#f6f6f6;cursor:pointer; }
         .opinion { margin: 3px 0; white-space:pre-wrap; }
         #filter-info { margin-top:8px; font-size:0.9em; color:#444; }
     </style>
+    <script src="debug_logger.js"></script>
+    <script src="google_auth.js"></script>
+    <script src="supabase.js"></script>
     <script src="popup.js"></script>
 </head>
 <body>
@@ -26,12 +43,20 @@
         <div id="tag-list" style="margin-top:6px;font-size:0.95em"></div>
     </div>
     <div class="input-group">
-        <label for="opinion">Opinion</label>
+        <label for="opinion">My Notes</label>
         <textarea id="opinion" rows="3" placeholder="Enter your thoughts here"></textarea>
     </div>
     <button id="save-btn">Save</button>
     <button id="refresh-btn" style="margin-left:8px;">Refresh List</button>
     <button id="download-btn" style="margin-left:8px;">Download CSV</button>
+    <button id="settings-btn" style="margin-left:8px;">Settings</button>
+    <button id="sync-btn" style="margin-left:8px;background:#4CAF50;color:white;border:none;padding:5px 10px;border-radius:3px;cursor:pointer;">⇅ Sync</button>
+    <button id="load-db-btn" style="margin-left:8px;background:#6a5acd;color:white;border:none;padding:5px 10px;border-radius:3px;cursor:pointer;">Load From DB</button>
+    <div id="sync-status" style="margin-top:8px;font-size:0.85em;color:#666;"></div>
+    <details style="margin-top:10px;">
+        <summary style="cursor:pointer;color:#0366d6;font-size:0.85em;">Debug Log</summary>
+        <div id="debug-log" style="margin-top:8px;padding:8px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;font-family:monospace;font-size:0.75em;max-height:150px;overflow-y:auto;"></div>
+    </details>
     <div id="filter-tags" style="margin-top:10px;font-size:0.95em"></div>
     <div id="filter-info"></div>
     <div id="notes-list"></div>
