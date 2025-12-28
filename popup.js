@@ -159,10 +159,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const kb = bytes / 1024;
             debugLog(`${contextLabel} size estimate: ${mb.toFixed(2)} MB (${kb.toFixed(1)} KB)`);
             if (mb >= DB_SIZE_LIMIT_MB) {
-                const msg = `Warning: Your notes DB is about ${mb.toFixed(1)} MB (${kb.toFixed(0)} KB) (limit ${DB_SIZE_LIMIT_MB} MB). See ${DB_SIZE_HELP_URL}`;
-                alert(msg);
+                const msg = `Warning: Your notes DB is about ${mb.toFixed(1)} MB (${kb.toFixed(0)} KB). Limit: ${DB_SIZE_LIMIT_MB} MB.`;
+                const tip = `Tip: Use your personal Supabase DB to increase available storage. Open Settings and follow the Personal DB guide to configure your own Supabase.`;
+                alert(`${msg}\n${tip}`);
                 if (syncStatus) {
-                    syncStatus.textContent = msg;
+                    syncStatus.textContent = `${msg} ${tip}`;
                     syncStatus.style.color = 'orange';
                 }
             }
@@ -223,10 +224,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const kb = bytes / 1024;
             debugLog(`${contextLabel} authoritative size: ${mb.toFixed(2)} MB (${kb.toFixed(0)} KB)`);
             if (mb >= DB_SIZE_LIMIT_MB) {
-                const msg = `Warning: Your notes DB is about ${mb.toFixed(1)} MB (${kb.toFixed(0)} KB) (limit ${DB_SIZE_LIMIT_MB} MB). See ${DB_SIZE_HELP_URL}`;
-                alert(msg);
+                const msg = `Warning: Your notes DB is about ${mb.toFixed(1)} MB (${kb.toFixed(0)} KB). Limit: ${DB_SIZE_LIMIT_MB} MB.`;
+                const tip = `Tip: Use your personal Supabase DB to increase available storage. Open Settings and follow the Personal DB guide to configure your own Supabase.`;
+                alert(`${msg}\n${tip}`);
                 if (syncStatus) {
-                    syncStatus.textContent = msg;
+                    syncStatus.textContent = `${msg} ${tip}`;
                     syncStatus.style.color = 'orange';
                 }
             }
