@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Notes",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Save YouTube video titles and information, manage them with tags, and download as CSV.",
   "author": "cheoljoo lee",
   "homepage_url": "https://github.com/cheoljoo/youtube_notes_chrome_extension",
