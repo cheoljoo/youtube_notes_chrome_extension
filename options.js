@@ -8,15 +8,37 @@ document.getElementById('save').addEventListener('click', async ()=>{
     document.getElementById('status').style.color='red';
     return;
   }
+
+  const prev = await chrome.storage.sync.get({ supabase_user_email: '', user_identifier: '' });
+  const changedUser = (prev.supabase_user_email || '') !== manualUserEmail;
+
   await chrome.storage.sync.set({
     supabase_url: supabaseUrl,
     supabase_key: supabaseKey,
     supabase_user_email: manualUserEmail,
     user_identifier: manualUserEmail
   });
-  document.getElementById('status').textContent='Saved';
+
+  if (changedUser) {
+    // Clear local data so the popup list switches to the new user context
+    await chrome.storage.local.set({ notes: [], deletedNotes: [] });
+    await chrome.storage.sync.set({ tags: [] });
+    document.getElementById('status').textContent='Saved. Email/ID changed; loading notes for the new user...';
+    document.getElementById('status').style.color='black';
+    try {
+      const count = await refreshNotesForUser(manualUserEmail);
+      document.getElementById('status').textContent=`Loaded ${count} notes for ${manualUserEmail}`;
+      document.getElementById('status').style.color='green';
+    } catch (e) {
+      debugError('Reload after email change failed', e);
+      document.getElementById('status').textContent='Saved. Failed to load notes for new user (check URL/key).';
+      document.getElementById('status').style.color='red';
+    }
+  } else {
+    document.getElementById('status').textContent='Saved';
+  }
   document.getElementById('status').style.color='green';
-  setTimeout(()=>{ document.getElementById('status').textContent=''; }, 2000);
+  setTimeout(()=>{ document.getElementById('status').textContent=''; }, 4000);
 });
 
 // Google login/logout removed from Settings
@@ -133,3 +155,40 @@ async function load(){
 }
 
 load();
+
+// Fetch remote notes for the given user and replace local notes/tags
+async function refreshNotesForUser(userEmail) {
+  const client = await getSupabaseClient();
+  const remoteNotes = await client.getAllNotesAll(userEmail);
+  const converted = (remoteNotes || []).map(r => ({
+    time: r?.time ?? Date.now(),
+    tags: Array.isArray(r?.tags) ? r.tags : [],
+    opinion: r?.opinion ?? null,
+    url: r?.url ?? null,
+    youtubeTitle: r?.youtube_title ?? null,
+    youtubePublished: r?.youtube_published ?? null
+  }));
+
+  const deduped = dedupeByContentLocal(converted);
+  await chrome.storage.local.set({ notes: deduped, deletedNotes: [] });
+
+  const tagSet = new Set();
+  deduped.forEach(n => (n.tags || []).forEach(t => tagSet.add(t)));
+  await chrome.storage.sync.set({ tags: Array.from(tagSet) });
+
+  return deduped.length;
+}
+
+function dedupeByContentLocal(list) {
+  const byKey = new Map();
+  for (const n of (list || [])) {
+    const title = String(n?.youtubeTitle || '').trim();
+    const tags = (Array.isArray(n?.tags) ? n.tags : []).map(v => String(v || '').trim()).sort();
+    const opinion = String(n?.opinion || '').trim();
+    const key = `${title}|${tags.join(',')}|${opinion}`;
+    if (!byKey.has(key) || ((n?.time || 0) > (byKey.get(key)?.time || 0))) {
+      byKey.set(key, n);
+    }
+  }
+  return Array.from(byKey.values()).sort((a, b) => (b.time || 0) - (a.time || 0));
+}

@@ -37,8 +37,15 @@
     <script src="popup.js"></script>
 </head>
 <body>
-    <div style="padding:6px 0;border-bottom:1px solid #eee;margin-bottom:10px;font-size:0.85em;color:#0366d6;">
+    <details style="margin:0 0 10px 0;padding:6px 0;border-bottom:1px solid #eee;font-size:1em;color:#333;">
+        <summary style="cursor:pointer;font-weight:600;">Youtube Notes Overview (click to expand)</summary>
+        <div style="margin-top:6px;line-height:1.4;font-size:1em;color:#444;">
+            YouTube Notes lets you save notes/tags for videos, sync them to your own Supabase, and export to CSV. Use your personal Supabase project to keep more notes on the free tier.
+        </div>
+    </details>
+    <div style="padding:0 0 8px 0;font-size:1em;color:#0366d6;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
         <a href="https://github.com/cheoljoo/youtube_notes_chrome_extension" target="_blank" rel="noopener" style="text-decoration:none;color:#0366d6;">📦 Source Code on GitHub</a>
+        <a href="https://github.com/cheoljoo/youtube_notes_chrome_extension/issues" target="_blank" rel="noopener" style="text-decoration:none;color:#0366d6;">📝 Request (issues) if you want</a>
     </div>
     <div class="input-group">
         <label for="tags">Tags (comma separated)</label>
