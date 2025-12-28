@@ -112,7 +112,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (note.url) {
                     const existing = notes.find(n => n && n.url === note.url);
                     if (existing) {
-                        debugLog('Duplicate URL detected; opening edit modal instead of creating a new note');
+                        debugLog('Duplicate URL detected; refreshing metadata and opening edit modal');
+
+                        // Refresh stored metadata with current page info
+                        const idx = notes.findIndex(n => n && n.time === existing.time);
+                        if (idx >= 0) {
+                            const updated = { ...existing };
+                            if (note.youtubeTitle) updated.youtubeTitle = note.youtubeTitle;
+                            if (note.youtubePublished) updated.youtubePublished = note.youtubePublished;
+                            updated.url = note.url || updated.url;
+                            const copy = [...notes];
+                            copy[idx] = updated;
+                            await new Promise((resolve) => chrome.storage.local.set({ notes: copy }, resolve));
+                        }
+
                         await editNoteByTime(existing.time);
                         return;
                     }
