@@ -17,6 +17,31 @@ function normalizeNote(note, userEmail) {
     };
 }
 
+// Content-based key helpers (title + sorted tags + opinion)
+function normalizeTagValue(v) { return String(v || '').trim(); }
+function buildContentKey(title, tagsArray, opinion) {
+    const titleNorm = String(title || '').trim();
+    const tagsNorm = (Array.isArray(tagsArray) ? tagsArray : []).map(normalizeTagValue).sort();
+    const opinionNorm = String(opinion || '').trim();
+    return `${titleNorm}|${tagsNorm.join(',')}|${opinionNorm}`;
+}
+function contentKeyLocal(n) {
+    return buildContentKey(n?.youtubeTitle, n?.tags, n?.opinion);
+}
+function contentKeyRemote(r) {
+    return buildContentKey(r?.youtube_title, r?.tags, r?.opinion);
+}
+function dedupeNotesByContent(notes) {
+    const byKey = new Map();
+    for (const n of (notes || [])) {
+        const key = contentKeyLocal(n);
+        if (!byKey.has(key) || ((n?.time || 0) > (byKey.get(key)?.time || 0))) {
+            byKey.set(key, n);
+        }
+    }
+    return Array.from(byKey.values()).sort((a, b) => (b.time || 0) - (a.time || 0));
+}
+
 class SupabaseClient {
     constructor(supabaseUrl, supabaseKey) {
         this.url = supabaseUrl;
@@ -70,18 +95,20 @@ class SupabaseClient {
     // 노트 저장 (upsert) - user_email 포함
     async saveNote(note, userEmail) {
         const noteWithUser = normalizeNote(note, userEmail);
-        return await this.request('/rest/v1/notes', {
+        return await this.request('/rest/v1/notes?on_conflict=time,user_email', {
             method: 'POST',
-            body: JSON.stringify(noteWithUser)
+            body: JSON.stringify(noteWithUser),
+            extraHeaders: { Prefer: 'resolution=merge-duplicates,return=representation' }
         }, 'saveNote');
     }
 
-    // 여러 노트 한번에 저장 - user_email 포함
+    // 여러 노트 한번에 저장 - user_email 포함 (upsert)
     async saveNotes(notes, userEmail) {
         const notesWithUser = notes.map(note => normalizeNote(note, userEmail));
-        return await this.request('/rest/v1/notes', {
+        return await this.request('/rest/v1/notes?on_conflict=time,user_email', {
             method: 'POST',
-            body: JSON.stringify(notesWithUser)
+            body: JSON.stringify(notesWithUser),
+            extraHeaders: { Prefer: 'resolution=merge-duplicates,return=representation' }
         }, 'saveNotes');
     }
 
@@ -104,6 +131,14 @@ class SupabaseClient {
         await this.request(`/rest/v1/notes?time=eq.${time}&user_email=eq.${encodeURIComponent(userEmail)}`, {
             method: 'DELETE'
         }, 'deleteNote');
+        return true;
+    }
+
+    // 모든 노트 삭제 (현재 사용자 전체)
+    async clearNotes(userEmail) {
+        await this.request(`/rest/v1/notes?user_email=eq.${encodeURIComponent(userEmail)}`, {
+            method: 'DELETE'
+        }, 'clearNotes');
         return true;
     }
 
@@ -186,7 +221,8 @@ async function syncToSupabase() {
     
     const client = await getSupabaseClient();
     const result = await chrome.storage.local.get({notes: []});
-    const localNotes = result.notes || [];
+    const localNotesRaw = result.notes || [];
+    const localNotes = dedupeNotesByContent(localNotesRaw);
     
     debugLog(`Local notes count: ${localNotes.length}`);
     
@@ -199,11 +235,10 @@ async function syncToSupabase() {
     debugLog('Fetching remote notes...');
     const remoteNotes = await client.getAllNotes(userEmail);
     debugLog(`Remote notes count: ${remoteNotes.length}`);
+    const remoteKeySet = new Set((remoteNotes || []).map(contentKeyRemote));
     
-    const remoteTimes = new Set(remoteNotes.map(n => n.time));
-    
-    // 로컬에만 있는 노트 찾기
-    const notesToUpload = localNotes.filter(n => !remoteTimes.has(n.time));
+    // 로컬에만 있는 노트(내용 기준) 찾기
+    const notesToUpload = localNotes.filter(n => !remoteKeySet.has(contentKeyLocal(n)));
     debugLog(`Notes to upload: ${notesToUpload.length}`);
     
     if (notesToUpload.length > 0) {
@@ -240,16 +275,25 @@ async function syncFromSupabase() {
     const localNotes = result.notes || [];
     debugLog(`Local notes count: ${localNotes.length}`);
     
-    const localTimes = new Set(localNotes.map(n => n.time));
+    const localKeySet = new Set(localNotes.map(contentKeyLocal));
     
-    // Supabase에만 있는 노트 찾기
-    const notesToDownload = remoteNotes.filter(n => !localTimes.has(n.time));
+    // Supabase에만 있는 노트 (내용 기준)
+    const notesToDownload = remoteNotes.filter(r => !localKeySet.has(contentKeyRemote(r)));
     debugLog(`Notes to download: ${notesToDownload.length}`);
     
     if (notesToDownload.length > 0) {
         debugLog('Merging notes...');
-        // 병합 (최신순 유지)
-        const merged = [...notesToDownload, ...localNotes].sort((a, b) => b.time - a.time);
+        // 원격 노트를 로컬 형태로 변환 후 병합 + 중복 제거
+        const converted = notesToDownload.map(r => ({
+            time: r?.time ?? Date.now(),
+            user_email: userEmail,
+            tags: Array.isArray(r?.tags) ? r.tags : [],
+            opinion: r?.opinion ?? null,
+            url: r?.url ?? null,
+            youtubeTitle: r?.youtube_title ?? null,
+            youtubePublished: r?.youtube_published ?? null
+        }));
+        const merged = dedupeNotesByContent([...converted, ...localNotes]);
         await chrome.storage.local.set({notes: merged});
         debugLog(`Total notes after merge: ${merged.length}`);
         

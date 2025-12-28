@@ -4,40 +4,6 @@
 <body style="font-family:Arial;padding:12px;min-width:360px">
   <h3>Settings</h3>
   
-  <h4>Google Account</h4>
-  <div id="userInfo" style="margin:8px 0;padding:10px;background:#f5f5f5;border-radius:4px;display:none">
-    <div style="display:flex;align-items:center;gap:10px">
-      <img id="userPicture" style="width:40px;height:40px;border-radius:50%" />
-      <div>
-        <div id="userName" style="font-weight:bold"></div>
-        <div id="userEmail" style="font-size:0.9em;color:#666"></div>
-      </div>
-    </div>
-  </div>
-  <div style="margin:8px 0">
-    <button id="loginBtn" style="display:none">Login with Google</button>
-    <button id="logoutBtn" style="display:none">Logout</button>
-    <span id="authStatus" style="margin-left:8px;color:#666"></span>
-  </div>
-  <hr style="margin:16px 0">
-  
-  <h4>Gemini API Settings</h4>
-  <div>
-    <label>PaLM API Key (Gemini):</label><br>
-    <input id="apiKey" style="width:100%" />
-  </div>
-  <div style="margin-top:8px">
-    <label>Model (e.g. text-bison-001):</label><br>
-    <input id="model" style="width:100%" />
-  </div>
-  <div style="margin-top:8px">
-    <label>Spreadsheet ID:</label><br>
-    <input id="sheetId" style="width:100%" />
-  </div>
-  <div style="margin-top:8px">
-    <label>Sheet Range (e.g. Sheet1!A:D):</label><br>
-    <input id="sheetRange" style="width:100%" />
-  </div>
   <hr style="margin:16px 0">
   <h4>Supabase Sync Settings</h4>
   <div style="margin-top:8px">
@@ -65,7 +31,6 @@
   </details>
 
   <script src="debug_logger.js"></script>
-  <script src="google_auth.js"></script>
   <script src="options.js"></script>
 </body>
 </html>
